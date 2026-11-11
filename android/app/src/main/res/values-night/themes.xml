@@ -1,0 +1,12 @@
+<resources>
+    <style name="Theme.HowLongToCook" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/surface_dark</item>
+    </style>
+
+    <style name="Theme.HowLongToCook.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/surface_dark</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/brand_primary</item>
+        <item name="postSplashScreenTheme">@style/Theme.HowLongToCook</item>
+    </style>
+</resources>

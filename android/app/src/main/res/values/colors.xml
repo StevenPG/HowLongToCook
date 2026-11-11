@@ -1,0 +1,6 @@
+<resources>
+    <color name="brand_primary">#A0400F</color>
+    <color name="surface_light">#FFF8F5</color>
+    <color name="surface_dark">#1A120E</color>
+    <color name="ic_launcher_background">#A0400F</color>
+</resources>
