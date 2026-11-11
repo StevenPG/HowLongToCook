@@ -1,0 +1,56 @@
+# Local development stack: the Rust server plus MinIO (an S3-compatible store) so
+# both remote storage modes can be exercised from an emulator or device.
+#
+#   just dev-up        (or: docker compose -f compose.dev.yaml up -d --build)
+#
+# From the Android emulator, the host is reachable at 10.0.2.2:
+#   Self-hosted server : http://10.0.2.2:8080   token: dev-token-change-me
+#   S3-compatible      : endpoint http://10.0.2.2:9000, region us-east-1,
+#                        bucket howlongtocook, access key hltc, secret hltc-dev-secret
+#   MinIO console      : http://localhost:9001
+name: howlongtocook-dev
+
+services:
+  server:
+    build:
+      context: server
+    environment:
+      HLTC_TOKEN: dev-token-change-me
+      RUST_LOG: info,howlongtocook_server=debug
+    ports:
+      - "8080:8080"
+    volumes:
+      - server-data:/data
+
+  minio:
+    image: quay.io/minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: hltc
+      MINIO_ROOT_PASSWORD: hltc-dev-secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio-init:
+    image: quay.io/minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 hltc hltc-dev-secret &&
+      mc mb --ignore-existing local/howlongtocook &&
+      echo 'bucket ready'"
+    restart: "no"
+
+volumes:
+  server-data:
+  minio-data:

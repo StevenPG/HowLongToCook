@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}{% if is_new %}New product{% else %}{{ form.name }}{% endif %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="small"><a href="/admin/products">← Products</a></p>
+    <h1>{% if is_new %}New product{% else %}{{ form.name }}{% endif %}
+      {% if deleted %}<span class="chip deleted">Deleted</span>{% endif %}</h1>
+    {% if !is_new %}<p class="muted small">Created {{ created }} · Updated {{ updated }} · <code>{{ id }}</code></p>{% endif %}
+  </div>
+  {% if !is_new %}
+  <div class="row">
+    {% if deleted %}
+    <form class="inline" method="post" action="/admin/products/{{ id }}/restore"><button class="btn tonal">Restore</button></form>
+    {% else %}
+    <form class="inline" method="post" action="/admin/products/{{ id }}/delete"
+          onsubmit="return confirm('Delete this product? It will be removed from all synced devices.')">
+      <button class="btn danger">Delete</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% include "flash.html" %}
+
+{% if !methods.is_empty() %}
+<section class="card">
+  <h2>Instructions</h2>
+  <div class="methods">
+  {% for m in methods %}
+    <div class="method">
+      <h3><span>{{ m.method_type.label() }}{% if loop.first %} <span class="chip fav">Preferred</span>{% endif %}</span>
+          <span class="muted small">{{ m.total_label() }}</span></h3>
+      {% if !m.detail().is_empty() %}<div class="muted small">{{ m.detail() }}</div>{% endif %}
+      <ol>{% for s in m.steps %}<li>{{ s.text() }}</li>{% endfor %}</ol>
+      {% if let Some(n) = m.notes %}<p class="small">{{ n }}</p>{% endif %}
+    </div>
+  {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>{% if is_new %}Details{% else %}Edit{% endif %}</h2>
+  <form method="post" action="{% if is_new %}/admin/products/new{% else %}/admin/products/{{ id }}{% endif %}">
+    <div class="grid-2">
+      <div>
+        <label for="name">Name</label>
+        <input id="name" name="name" type="text" value="{{ form.name }}" required maxlength="200">
+      </div>
+      <div>
+        <label for="brand">Brand</label>
+        <input id="brand" name="brand" type="text" value="{{ form.brand }}" maxlength="200">
+      </div>
+      <div>
+        <label for="barcodes">Barcodes <span class="hint">one per line</span></label>
+        <textarea id="barcodes" name="barcodes" rows="3">{{ form.barcodes }}</textarea>
+      </div>
+      <div>
+        <label for="tags">Tags <span class="hint">comma separated</span></label>
+        <input id="tags" name="tags" type="text" value="{{ form.tags }}">
+        <label for="rating">Rating</label>
+        <select id="rating" name="rating">
+          <option value="" {% if form.rating.is_empty() %}selected{% endif %}>No rating</option>
+          {% for r in ["1", "2", "3", "4", "5"] %}
+          <option value="{{ r }}" {% if form.rating == *r %}selected{% endif %}>{{ r }} ★</option>
+          {% endfor %}
+        </select>
+        <label class="checkbox"><input type="checkbox" name="favorite" {% if form.is_favorite() %}checked{% endif %}> Favorite</label>
+      </div>
+    </div>
+    <label for="notes">Notes</label>
+    <textarea id="notes" name="notes">{{ form.notes }}</textarea>
+    <label for="methods_json">Cooking methods <span class="hint">JSON — first method is preferred. Types: MICROWAVE, OVEN, AIR_FRYER, STOVETOP. Actions: COOK, STIR, FLIP, SHAKE, STAND, VENT, REMOVE, OTHER. Temperature unit: F or C.</span></label>
+    <textarea id="methods_json" name="methods_json" class="code" spellcheck="false">{{ form.methods_json }}</textarea>
+    <div class="actions">
+      <button class="btn" type="submit">{% if is_new %}Create product{% else %}Save changes{% endif %}</button>
+      <a class="btn outline" href="/admin/products">Cancel</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,23 @@
+# Example ingress. Replace the host, ingress class and issuer to match your cluster.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: howlongtocook
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: [cook.example.com]
+      secretName: howlongtocook-tls
+  rules:
+    - host: cook.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: howlongtocook
+                port:
+                  name: http

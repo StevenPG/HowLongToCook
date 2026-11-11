@@ -1,0 +1,39 @@
+{
+  "id": "6f1c2a8e-8a8e-4c55-9b2c-0c6f0f7f2d10",
+  "name": "Chicken Pot Pie",
+  "brand": "Example Foods",
+  "barcodes": ["012345678905"],
+  "tags": ["dinner"],
+  "favorite": true,
+  "rating": 4,
+  "notes": "Let it rest, the filling is lava.",
+  "methods": [
+    {
+      "type": "MICROWAVE",
+      "power": "High",
+      "temperature": null,
+      "preheat": false,
+      "steps": [
+        { "action": "VENT", "durationSeconds": null, "note": "Cut slit in film" },
+        { "action": "COOK", "durationSeconds": 240, "note": null },
+        { "action": "STIR", "durationSeconds": null, "note": null },
+        { "action": "COOK", "durationSeconds": 120, "note": null },
+        { "action": "STAND", "durationSeconds": 60, "note": null }
+      ],
+      "notes": null
+    },
+    {
+      "type": "OVEN",
+      "power": null,
+      "temperature": { "value": 400, "unit": "F" },
+      "preheat": true,
+      "steps": [
+        { "action": "COOK", "durationSeconds": 2700, "note": "On baking sheet, center rack" }
+      ],
+      "notes": null
+    }
+  ],
+  "createdAt": 1762851000000,
+  "updatedAt": 1762851000000,
+  "deleted": false
+}

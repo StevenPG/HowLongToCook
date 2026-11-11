@@ -1,0 +1,276 @@
+openapi: 3.1.0
+info:
+  title: HowLongToCook Server API
+  version: 0.1.0
+  description: |
+    Sync API between the HowLongToCook Android app and the self-hosted Rust server.
+
+    All `/api/v1` endpoints require `Authorization: Bearer <token>` using the server's
+    shared token. Products are merged with **last-write-wins** on `updatedAt`; deletes
+    are tombstones (`deleted: true`). Clients sync incrementally with the `revision`
+    cursor returned by `GET /products`.
+  license:
+    name: GPL-3.0-or-later
+    identifier: GPL-3.0-or-later
+servers:
+  - url: http://localhost:8080
+security:
+  - bearerAuth: []
+paths:
+  /healthz:
+    get:
+      summary: Liveness/readiness probe
+      security: []
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+        "503":
+          description: Database unavailable
+  /api/v1/info:
+    get:
+      summary: Server information
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Info" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/products:
+    get:
+      summary: Products changed since a revision
+      description: |
+        Returns every product whose server revision is greater than `since` (use `0`
+        for a full download) and the current revision to use as the next cursor.
+      parameters:
+        - name: since
+          in: query
+          schema: { type: integer, format: int64, default: 0 }
+        - name: includeDeleted
+          in: query
+          schema: { type: boolean, default: true }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Changes" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/products/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Get one product
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Product" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      summary: Upsert a product (last-write-wins)
+      description: |
+        If the stored product has an `updatedAt` greater than or equal to the incoming
+        one, nothing changes and `applied` is `false`; the stored version is returned.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Product" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WriteResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    delete:
+      summary: Tombstone a product
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WriteResult" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/barcodes/{code}:
+    get:
+      summary: Active products carrying a barcode
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK (possibly empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Product" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/export:
+    get:
+      summary: Export the whole library (including tombstones)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Library" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/import:
+    post:
+      summary: Merge a library export (last-write-wins, all-or-nothing validation)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Library" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  responses:
+    Unauthorized:
+      description: Missing or invalid token
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    BadRequest:
+      description: Validation failed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error: { type: string, enum: [bad_request, unauthorized, not_found, internal] }
+        message: { type: string }
+    Info:
+      type: object
+      properties:
+        name: { type: string }
+        version: { type: string }
+        schemaVersion: { type: integer }
+        productCount: { type: integer }
+        revision: { type: integer, format: int64 }
+        serverTime: { type: integer, format: int64 }
+    Changes:
+      type: object
+      required: [revision, products]
+      properties:
+        revision: { type: integer, format: int64 }
+        products:
+          type: array
+          items: { $ref: "#/components/schemas/Product" }
+    WriteResult:
+      type: object
+      required: [product, applied, revision]
+      properties:
+        product: { $ref: "#/components/schemas/Product" }
+        applied: { type: boolean }
+        revision: { type: integer, format: int64 }
+    ImportResult:
+      type: object
+      properties:
+        received: { type: integer }
+        applied: { type: integer }
+        skipped: { type: integer }
+        revision: { type: integer, format: int64 }
+    Library:
+      type: object
+      required: [schemaVersion, products]
+      properties:
+        schemaVersion: { type: integer, const: 1 }
+        updatedAt: { type: integer, format: int64 }
+        products:
+          type: array
+          items: { $ref: "#/components/schemas/Product" }
+    Product:
+      type: object
+      required: [id, name, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        brand: { type: [string, "null"], maxLength: 200 }
+        barcodes:
+          type: array
+          maxItems: 20
+          items: { type: string, pattern: "^[0-9A-Za-z-]{4,64}$" }
+        tags:
+          type: array
+          maxItems: 20
+          items: { type: string, maxLength: 40 }
+        favorite: { type: boolean, default: false }
+        rating: { type: [integer, "null"], minimum: 1, maximum: 5 }
+        notes: { type: [string, "null"], maxLength: 4000 }
+        methods:
+          type: array
+          maxItems: 10
+          description: Ordered; the first method is the preferred one.
+          items: { $ref: "#/components/schemas/CookingMethod" }
+        createdAt: { type: integer, format: int64, description: Epoch millis }
+        updatedAt: { type: integer, format: int64, description: Epoch millis; last-write-wins key }
+        deleted: { type: boolean, default: false }
+      example:
+        $ref: "./examples/product.json"
+    CookingMethod:
+      type: object
+      required: [type]
+      properties:
+        type: { type: string, enum: [MICROWAVE, OVEN, AIR_FRYER, STOVETOP] }
+        power: { type: [string, "null"], maxLength: 60, description: e.g. "High", "50%", "Medium-high" }
+        temperature:
+          oneOf:
+            - type: "null"
+            - $ref: "#/components/schemas/Temperature"
+        preheat: { type: boolean, default: false }
+        steps:
+          type: array
+          maxItems: 50
+          items: { $ref: "#/components/schemas/Step" }
+        notes: { type: [string, "null"] }
+    Temperature:
+      type: object
+      required: [value, unit]
+      properties:
+        value: { type: integer, minimum: 0, maximum: 1000 }
+        unit: { type: string, enum: [F, C] }
+    Step:
+      type: object
+      required: [action]
+      properties:
+        action: { type: string, enum: [COOK, STIR, FLIP, SHAKE, STAND, VENT, REMOVE, OTHER] }
+        durationSeconds: { type: [integer, "null"], minimum: 0, maximum: 86400 }
+        note: { type: [string, "null"], maxLength: 500 }
