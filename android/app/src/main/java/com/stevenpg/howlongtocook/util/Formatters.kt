@@ -17,18 +17,19 @@ fun defaultUnitFor(locale: Locale): TemperatureUnit =
 
 /**
  * Converts for display. Same-unit values are shown exactly as printed on the box;
- * converted values are rounded to the nearest 5° like real oven dials.
+ * converted values snap to conventional oven-dial steps (25°F / 10°C), so 400°F reads
+ * as 200°C and 180°C as 350°F — matching what packaging prints in each unit.
  */
 fun Temperature.displayIn(unit: TemperatureUnit): String {
     val shown = when {
         this.unit == unit -> value
-        unit == TemperatureUnit.C -> roundTo5((value - 32) * 5.0 / 9.0)
-        else -> roundTo5(value * 9.0 / 5.0 + 32)
+        unit == TemperatureUnit.C -> roundTo((value - 32) * 5.0 / 9.0, 10)
+        else -> roundTo(value * 9.0 / 5.0 + 32, 25)
     }
     return "$shown°${unit.name}"
 }
 
-private fun roundTo5(v: Double): Int = (v / 5.0).roundToInt() * 5
+private fun roundTo(v: Double, step: Int): Int = (v / step).roundToInt() * step
 
 /** "7 min", "1:30", "45 sec", "1 hr 15 min". */
 fun formatDuration(seconds: Int): String {

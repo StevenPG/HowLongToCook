@@ -50,7 +50,7 @@ freezer. HowLongToCook stores those instructions per product, keyed by **name** 
 | minSdk / target | 31 (Android 12) / 36 |
 | Package | `com.stevenpg.howlongtocook` |
 | Units | Temperatures stored as entered (value + unit), displayed in user's unit (locale default, overridable) |
-| Testing | Pragmatic: JVM unit tests (sync merge, SigV4, serialization, formatting), Compose UI tests, Rust integration tests, MinIO via compose for S3 testing |
+| Testing | Pragmatic: JVM unit tests (sync merge, SigV4, serialization, formatting), Compose UI tests, Rust integration tests, RustFS via compose for S3 testing |
 | License | GPL-3.0-or-later |
 
 ## 4. Repository layout
@@ -129,7 +129,7 @@ The canonical JSON representation (used for sync, export/import and the server A
 - `action`: `COOK | STIR | FLIP | SHAKE | STAND | VENT | REMOVE | OTHER`. Steps render as
   e.g. "Cook 4:00", "Stir", "Stand 1:00", with an optional note.
 - `temperature`: stored exactly as printed on the box (`unit` is `F` or `C`), converted for
-  display (rounded to the nearest 5°) — no lossy round-trips.
+  display (snapped to conventional dial steps: 25 °F / 10 °C, so 400 °F shows as 200 °C) — no lossy round-trips.
 - `power`: free text (microwave "High"/"50%", stovetop "Medium-high").
 - `createdAt`/`updatedAt`: epoch millis, set by the client that made the change.
 - `deleted`: tombstone. Deletes are soft so they propagate through sync; tombstones are
@@ -213,6 +213,9 @@ HTTP requests and fits easily in a single-user library. Writes use optimistic
 concurrency: `PUT` with `If-Match: <etag>` (or `If-None-Match: *` if it did not exist).
 On `412 Precondition Failed` the engine re-fetches and re-merges (max 3 attempts). If the
 provider rejects conditional headers (`501`), it falls back to an unconditional put.
+AWS S3 and Cloudflare R2 enforce `If-Match`; some S3-compatible servers (e.g. RustFS,
+used by the dev stack) accept but ignore it, in which case concurrent writes from two
+devices in the same instant fall back to last-writer-wins at the object level.
 
 Requests are signed with a small in-house **AWS SigV4** signer (unit-tested against the
 AWS published example) over Ktor — avoiding the multi-MB AWS SDK. Presets:
@@ -360,7 +363,8 @@ The admin UI uses the same palette as the app for a consistent look.
   Deployment (`replicas: 1`, `strategy: Recreate` — SQLite has a single writer;
   non-root, read-only root FS, probes, resource limits), Service, and an example
   Ingress (TLS via cert-manager annotation, commented).
-- **Local dev:** `compose.dev.yaml` runs the server plus MinIO and creates a bucket so
+- **Local dev:** `compose.dev.yaml` runs the server plus RustFS (an Apache-2.0, MinIO-compatible
+  S3 server; MinIO no longer publishes images) and creates a bucket so
   both remote modes can be tested from an emulator (`http://10.0.2.2:8080`,
   `http://10.0.2.2:9000`).
 
@@ -378,7 +382,9 @@ The admin UI uses the same palette as the app for a consistent look.
 ## 10. Testing strategy
 
 - **Android JVM tests:** sync merge rules, SigV4 against AWS test vector, S3 store
-  against Ktor `MockEngine` (ETag / 412 retry), server store, JSON (de)serialization,
+  against Ktor `MockEngine` (ETag / 412 retry), server store, two-device sync convergence
+  (Robolectric + Room), Roborazzi screenshot renders, opt-in live tests against a real
+  S3 store and the real Rust server (`LiveBackendsTest`), JSON (de)serialization,
   temperature/duration formatting, editor validation.
 - **Android instrumented tests:** Room DAO, Compose UI flows (library → editor → detail).
   Run from Android Studio.

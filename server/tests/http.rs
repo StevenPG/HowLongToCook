@@ -1,14 +1,14 @@
 //! End-to-end tests over the full router with an in-memory database.
 
-use axum::body::Body;
-use axum::http::{header, Request, StatusCode};
 use axum::Router;
+use axum::body::Body;
+use axum::http::{Request, StatusCode, header};
 use http_body_util::BodyExt;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tower::ServiceExt;
 
 use howlongtocook_server::db::Db;
-use howlongtocook_server::{app, AppState};
+use howlongtocook_server::{AppState, app};
 
 const TOKEN: &str = "test-token-0123456789";
 
@@ -58,7 +58,11 @@ async fn healthz_is_public() {
 #[tokio::test]
 async fn api_requires_token() {
     let app = test_app().await;
-    let (status, headers, _) = send(&app, Request::get("/api/v1/info").body(Body::empty()).unwrap()).await;
+    let (status, headers, _) = send(
+        &app,
+        Request::get("/api/v1/info").body(Body::empty()).unwrap(),
+    )
+    .await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
     assert!(headers.contains_key("www-authenticate"));
 
@@ -67,7 +71,10 @@ async fn api_requires_token() {
         .body(Body::empty())
         .unwrap();
     assert_eq!(send(&app, bad).await.0, StatusCode::UNAUTHORIZED);
-    assert_eq!(send(&app, api("GET", "/api/v1/info", None)).await.0, StatusCode::OK);
+    assert_eq!(
+        send(&app, api("GET", "/api/v1/info", None)).await.0,
+        StatusCode::OK
+    );
 }
 
 #[tokio::test]
@@ -77,7 +84,11 @@ async fn sync_flow() {
     let id = p["id"].as_str().unwrap().to_string();
 
     // Push.
-    let (status, _, body) = send(&app, api("PUT", &format!("/api/v1/products/{id}"), Some(p.clone()))).await;
+    let (status, _, body) = send(
+        &app,
+        api("PUT", &format!("/api/v1/products/{id}"), Some(p.clone())),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK, "{body}");
     let put = json(&body);
     assert_eq!(put["applied"], true);
@@ -96,7 +107,11 @@ async fn sync_flow() {
     let mut stale = p.clone();
     stale["name"] = json!("Stale");
     stale["updatedAt"] = json!(1);
-    let (_, _, body) = send(&app, api("PUT", &format!("/api/v1/products/{id}"), Some(stale))).await;
+    let (_, _, body) = send(
+        &app,
+        api("PUT", &format!("/api/v1/products/{id}"), Some(stale)),
+    )
+    .await;
     let put = json(&body);
     assert_eq!(put["applied"], false);
     assert_eq!(put["product"]["name"], "Chicken Pot Pie");
@@ -106,7 +121,8 @@ async fn sync_flow() {
     assert_eq!(json(&body).as_array().unwrap().len(), 1);
 
     // Delete makes a tombstone that is visible to sync.
-    let (status, _, body) = send(&app, api("DELETE", &format!("/api/v1/products/{id}"), None)).await;
+    let (status, _, body) =
+        send(&app, api("DELETE", &format!("/api/v1/products/{id}"), None)).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(json(&body)["product"]["deleted"], true);
     let (_, _, body) = send(&app, api("GET", "/api/v1/products?since=1", None)).await;
@@ -121,14 +137,19 @@ async fn validation_errors() {
     let mut p = example();
     p["rating"] = json!(11);
     let id = p["id"].as_str().unwrap().to_string();
-    let (status, _, body) = send(&app, api("PUT", &format!("/api/v1/products/{id}"), Some(p))).await;
+    let (status, _, body) =
+        send(&app, api("PUT", &format!("/api/v1/products/{id}"), Some(p))).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_eq!(json(&body)["error"], "bad_request");
 
     let p = example();
     let (status, _, _) = send(
         &app,
-        api("PUT", "/api/v1/products/00000000-0000-4000-8000-000000000000", Some(p)),
+        api(
+            "PUT",
+            "/api/v1/products/00000000-0000-4000-8000-000000000000",
+            Some(p),
+        ),
     )
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
@@ -159,11 +180,16 @@ async fn admin_login_flow() {
     let app = test_app().await;
 
     // Protected pages redirect to login.
-    let (status, headers, _) = send(&app, Request::get("/admin").body(Body::empty()).unwrap()).await;
+    let (status, headers, _) =
+        send(&app, Request::get("/admin").body(Body::empty()).unwrap()).await;
     assert_eq!(status, StatusCode::SEE_OTHER);
     assert_eq!(headers[header::LOCATION], "/admin/login");
 
-    let (status, _, body) = send(&app, Request::get("/admin/login").body(Body::empty()).unwrap()).await;
+    let (status, _, body) = send(
+        &app,
+        Request::get("/admin/login").body(Body::empty()).unwrap(),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert!(body.contains("Access token"));
 
@@ -219,7 +245,12 @@ async fn admin_login_flow() {
     assert_eq!(status, StatusCode::OK);
     let (status, headers, body) = send(&app, get("/admin/export")).await;
     assert_eq!(status, StatusCode::OK);
-    assert!(headers[header::CONTENT_DISPOSITION].to_str().unwrap().contains("attachment"));
+    assert!(
+        headers[header::CONTENT_DISPOSITION]
+            .to_str()
+            .unwrap()
+            .contains("attachment")
+    );
     assert!(body.contains("Chicken Pot Pie"));
 
     // Edit through the form; server-side edits always win.
@@ -264,14 +295,29 @@ async fn admin_login_flow() {
         .body(Body::empty())
         .unwrap();
     let (_, headers, _) = send(&app, purge).await;
-    assert!(headers[header::LOCATION].to_str().unwrap().contains("Purged+1"));
+    assert!(
+        headers[header::LOCATION]
+            .to_str()
+            .unwrap()
+            .contains("Purged+1")
+    );
 }
 
 #[tokio::test]
 async fn admin_static_assets_are_public() {
     let app = test_app().await;
-    let (status, headers, _) =
-        send(&app, Request::get("/admin/static/admin.css").body(Body::empty()).unwrap()).await;
+    let (status, headers, _) = send(
+        &app,
+        Request::get("/admin/static/admin.css")
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
-    assert!(headers[header::CONTENT_TYPE].to_str().unwrap().starts_with("text/css"));
+    assert!(
+        headers[header::CONTENT_TYPE]
+            .to_str()
+            .unwrap()
+            .starts_with("text/css")
+    );
 }

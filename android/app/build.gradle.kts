@@ -68,6 +68,19 @@ kotlin {
     }
 }
 
+tasks.withType<Test>().configureEach {
+    // Live-backend tests (LiveBackendsTest) read these; declaring them as inputs stops
+    // Gradle from reusing a cached result from a run with different settings.
+    listOf("HLTC_LIVE_S3_ENDPOINT", "HLTC_LIVE_SERVER_URL").forEach {
+        inputs.property(it, providers.environmentVariable(it).orElse(""))
+    }
+    // Screenshot tests: `./gradlew testDebugUnitTest -Pscreenshots` writes PNGs to
+    // app/build/screenshots (Roborazzi); without the flag they only render.
+    if (providers.gradleProperty("screenshots").isPresent) {
+        systemProperty("roborazzi.test.record", "true")
+    }
+}
+
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
     arg("room.generateKotlin", "true")
@@ -122,6 +135,10 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.room.testing)
     testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
