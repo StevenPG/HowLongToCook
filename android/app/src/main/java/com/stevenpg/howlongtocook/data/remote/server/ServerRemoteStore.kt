@@ -1,6 +1,7 @@
 package com.stevenpg.howlongtocook.data.remote.server
 
 import com.stevenpg.howlongtocook.data.model.Product
+import com.stevenpg.howlongtocook.data.remote.ConnectionInfo
 import com.stevenpg.howlongtocook.data.remote.LocalRecord
 import com.stevenpg.howlongtocook.data.remote.RemoteStore
 import com.stevenpg.howlongtocook.data.remote.RemoteSyncResult
@@ -47,10 +48,10 @@ class ServerRemoteStore(
     private val base = baseUrl.trim().trimEnd('/')
     override val description: String = base
 
-    override suspend fun testConnection(): String {
+    override suspend fun testConnection(): ConnectionInfo {
         val res = http.get("$base/api/v1/info") { bearerAuth(token) }
         val info = AppJson.decodeFromString(ServerInfo.serializer(), res.ensureOk().bodyAsText())
-        return "Connected to server v${info.version}. ${info.productCount} product(s)."
+        return ConnectionInfo(productCount = info.productCount.toInt(), serverVersion = info.version)
     }
 
     override suspend fun sync(local: List<LocalRecord>, cursor: String?): RemoteSyncResult {

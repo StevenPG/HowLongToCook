@@ -5,6 +5,7 @@ import com.stevenpg.howlongtocook.data.local.ProductEntity
 import com.stevenpg.howlongtocook.data.model.Library
 import com.stevenpg.howlongtocook.data.model.Product
 import com.stevenpg.howlongtocook.data.model.ProductValidation
+import com.stevenpg.howlongtocook.data.model.ValidationIssue
 import com.stevenpg.howlongtocook.data.sync.Merge
 import com.stevenpg.howlongtocook.data.sync.SyncRequester
 import java.util.UUID
@@ -13,7 +14,14 @@ import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-class ValidationException(val errors: List<String>) : Exception(errors.joinToString("\n"))
+/** Thrown when a product breaks the shared rules. [productName] is set for imports. */
+class ValidationException(
+    val issues: List<ValidationIssue>,
+    val productName: String? = null,
+) : Exception(issues.joinToString { it.type.name })
+
+/** Thrown when an export file comes from a newer, incompatible app version. */
+class NewerLibraryFileException : Exception("Export file was created by a newer app version")
 
 data class ImportSummary(val received: Int, val applied: Int, val skipped: Int)
 
@@ -90,12 +98,10 @@ class ProductRepository @Inject constructor(
 
     /** Merges an export file with last-write-wins; applied products are queued for upload. */
     suspend fun importLibrary(library: Library): ImportSummary {
-        require(library.schemaVersion <= Library.SCHEMA_VERSION) {
-            "This file was created by a newer version of the app"
-        }
+        if (library.schemaVersion > Library.SCHEMA_VERSION) throw NewerLibraryFileException()
         val incoming = library.products.map { p ->
-            val (normalized, errors) = ProductValidation.normalize(p)
-            if (errors.isNotEmpty()) throw ValidationException(listOf("\"${p.name}\": ${errors.first()}"))
+            val (normalized, issues) = ProductValidation.normalize(p)
+            if (issues.isNotEmpty()) throw ValidationException(issues, productName = p.name)
             normalized
         }
         var applied = 0

@@ -3,13 +3,17 @@ package com.stevenpg.howlongtocook.ui.settings
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.stevenpg.howlongtocook.data.repository.ValidationException
+import com.stevenpg.howlongtocook.R
 import com.stevenpg.howlongtocook.data.settings.AppSettings
 import com.stevenpg.howlongtocook.data.settings.SettingsRepository
 import com.stevenpg.howlongtocook.data.settings.ThemeMode
 import com.stevenpg.howlongtocook.data.settings.UnitPreference
 import com.stevenpg.howlongtocook.data.sync.SyncScheduler
 import com.stevenpg.howlongtocook.data.transfer.LibraryFiles
+import com.stevenpg.howlongtocook.ui.text.UiText
+import com.stevenpg.howlongtocook.ui.text.toUiText
+import com.stevenpg.howlongtocook.ui.text.uiPlural
+import com.stevenpg.howlongtocook.ui.text.uiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,8 +35,8 @@ class SettingsViewModel @Inject constructor(
     val syncing: StateFlow<Boolean> = scheduler.isSyncing
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
-    private val _message = MutableStateFlow<String?>(null)
-    val message: StateFlow<String?> = _message.asStateFlow()
+    private val _message = MutableStateFlow<UiText?>(null)
+    val message: StateFlow<UiText?> = _message.asStateFlow()
 
     fun setTheme(mode: ThemeMode) = viewModelScope.launch { settingsRepository.setThemeMode(mode) }
     fun setDynamicColor(enabled: Boolean) = viewModelScope.launch { settingsRepository.setDynamicColor(enabled) }
@@ -45,20 +49,18 @@ class SettingsViewModel @Inject constructor(
     fun export(uri: Uri) = viewModelScope.launch {
         _message.value = try {
             val count = files.export(uri)
-            "Exported $count product(s)"
+            uiPlural(R.plurals.export_done, count, count)
         } catch (e: Exception) {
-            "Export failed: ${e.message}"
+            uiText(R.string.export_failed, e.toUiText())
         }
     }
 
     fun import(uri: Uri) = viewModelScope.launch {
         _message.value = try {
             val r = files.import(uri)
-            "Imported ${r.received} product(s): ${r.applied} added or updated, ${r.skipped} already up to date"
-        } catch (e: ValidationException) {
-            "Import failed: ${e.errors.first()}"
+            uiPlural(R.plurals.import_done, r.received, r.received, r.applied, r.skipped)
         } catch (e: Exception) {
-            "Import failed: ${e.message}"
+            uiText(R.string.import_failed, e.toUiText())
         }
     }
 

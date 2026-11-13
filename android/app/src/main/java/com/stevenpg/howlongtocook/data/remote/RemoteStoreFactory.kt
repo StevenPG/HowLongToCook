@@ -1,5 +1,6 @@
 package com.stevenpg.howlongtocook.data.remote
 
+import com.stevenpg.howlongtocook.data.remote.RemoteConfigurationException.Reason
 import com.stevenpg.howlongtocook.data.remote.s3.S3Client
 import com.stevenpg.howlongtocook.data.remote.s3.S3RemoteStore
 import com.stevenpg.howlongtocook.data.remote.server.ServerRemoteStore
@@ -27,11 +28,11 @@ class RemoteStoreFactory @Inject constructor(
     }
 
     fun s3(s: S3Settings, secret: String?): RemoteStore {
-        if (s.provider == S3Provider.R2 && s.accountId.isBlank()) throw RemoteConfigurationException("Enter your Cloudflare account ID")
-        if (s.provider == S3Provider.CUSTOM && s.endpoint.isBlank()) throw RemoteConfigurationException("Enter the endpoint URL")
-        if (s.bucket.isBlank()) throw RemoteConfigurationException("Enter a bucket name")
-        if (s.accessKeyId.isBlank()) throw RemoteConfigurationException("Enter the access key ID")
-        if (secret.isNullOrBlank()) throw RemoteConfigurationException("Enter the secret access key")
+        if (s.provider == S3Provider.R2 && s.accountId.isBlank()) throw RemoteConfigurationException(Reason.MISSING_ACCOUNT_ID)
+        if (s.provider == S3Provider.CUSTOM && s.endpoint.isBlank()) throw RemoteConfigurationException(Reason.MISSING_ENDPOINT)
+        if (s.bucket.isBlank()) throw RemoteConfigurationException(Reason.MISSING_BUCKET)
+        if (s.accessKeyId.isBlank()) throw RemoteConfigurationException(Reason.MISSING_ACCESS_KEY)
+        if (secret.isNullOrBlank()) throw RemoteConfigurationException(Reason.MISSING_SECRET)
         val client = try {
             S3Client(
                 http = http,
@@ -43,7 +44,7 @@ class RemoteStoreFactory @Inject constructor(
                 pathStyle = s.usePathStyle(),
             )
         } catch (e: IllegalArgumentException) {
-            throw RemoteConfigurationException(e.message ?: "Invalid endpoint")
+            throw RemoteConfigurationException(Reason.INVALID_ENDPOINT)
         }
         return S3RemoteStore(client, s.objectKey(), "${s.bucket}/${s.objectKey()}")
     }
@@ -51,9 +52,9 @@ class RemoteStoreFactory @Inject constructor(
     fun server(s: ServerSettings, token: String?): RemoteStore {
         val url = s.baseUrl.trim()
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            throw RemoteConfigurationException("Server URL must start with https:// or http://")
+            throw RemoteConfigurationException(Reason.INVALID_SERVER_URL)
         }
-        if (token.isNullOrBlank()) throw RemoteConfigurationException("Enter the server token")
+        if (token.isNullOrBlank()) throw RemoteConfigurationException(Reason.MISSING_TOKEN)
         return ServerRemoteStore(http, url, token.trim())
     }
 }

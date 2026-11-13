@@ -1,6 +1,7 @@
 package com.stevenpg.howlongtocook.data.remote.s3
 
 import com.stevenpg.howlongtocook.data.model.Library
+import com.stevenpg.howlongtocook.data.remote.ConnectionInfo
 import com.stevenpg.howlongtocook.data.remote.LocalRecord
 import com.stevenpg.howlongtocook.testing.FakeS3
 import com.stevenpg.howlongtocook.testing.product
@@ -87,8 +88,8 @@ class S3RemoteStoreTest {
     @Test
     fun `test connection reports library size`() = runTest {
         val s3 = FakeS3()
-        assertTrue(store(s3).testConnection().contains("No library yet"))
+        assertEquals(ConnectionInfo(productCount = null), store(s3).testConnection())
         store(s3).sync(listOf(LocalRecord(product("a", 1, "A"), dirty = true)), null)
-        assertTrue(store(s3).testConnection().contains("1 product"))
+        assertEquals(ConnectionInfo(productCount = 1), store(s3).testConnection())
     }
 }

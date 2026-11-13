@@ -57,7 +57,9 @@ Open the `android/` directory (not the repo root) in Android Studio.
   exposed as `StateFlow`.
 - Use Material 3 theme tokens (`MaterialTheme.colorScheme`, `typography`, `shapes`),
   never hard-coded colors, so light, dark and dynamic color keep working.
-- New user-facing text should go in `res/values/strings.xml` (existing text is being migrated).
+- All user-facing text lives in `res/values/strings.xml` (use plurals for counts). In
+  composables use `stringResource`; ViewModels and the data layer return `UiText` or typed
+  errors, mapped to resources in `ui/text/Messages.kt`. Never hard-code display strings.
 - Keep `./gradlew lintDebug` free of errors.
 
 ### Rust

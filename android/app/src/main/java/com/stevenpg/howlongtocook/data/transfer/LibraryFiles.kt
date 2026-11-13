@@ -13,6 +13,10 @@ import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+class LibraryFileException(val reason: Reason) : Exception(reason.name) {
+    enum class Reason { CANNOT_READ, CANNOT_WRITE, NOT_AN_EXPORT }
+}
+
 /** Reads/writes library backups through the Storage Access Framework. */
 @Singleton
 class LibraryFiles @Inject constructor(
@@ -23,19 +27,21 @@ class LibraryFiles @Inject constructor(
         val library = repository.exportLibrary()
         context.contentResolver.openOutputStream(uri, "wt")?.use {
             it.write(PrettyJson.encodeToString(Library.serializer(), library).encodeToByteArray())
-        } ?: error("Could not open the file for writing")
+        } ?: throw LibraryFileException(LibraryFileException.Reason.CANNOT_WRITE)
         library.products.count { !it.deleted }
     }
 
     suspend fun import(uri: Uri): ImportSummary {
         val text = withContext(Dispatchers.IO) {
             context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
-                ?: error("Could not open the file")
+                ?: throw LibraryFileException(LibraryFileException.Reason.CANNOT_READ)
         }
         val library = try {
             AppJson.decodeFromString(Library.serializer(), text)
-        } catch (e: Exception) {
-            throw IllegalArgumentException("Not a HowLongToCook export file")
+        } catch (e: kotlinx.serialization.SerializationException) {
+            throw LibraryFileException(LibraryFileException.Reason.NOT_AN_EXPORT)
+        } catch (e: IllegalArgumentException) {
+            throw LibraryFileException(LibraryFileException.Reason.NOT_AN_EXPORT)
         }
         return repository.importLibrary(library)
     }

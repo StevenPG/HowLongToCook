@@ -73,6 +73,7 @@ class SyncEngineTest {
             override fun requestSync() { syncRequests++ }
         }).also { it.clock = { ++clock } }
         val engine = SyncEngine(
+            context,
             db.productDao(),
             settings,
             RemoteStoreFactory(HttpClient(engine) { install(ContentNegotiation) { json(AppJson) } }, secrets),

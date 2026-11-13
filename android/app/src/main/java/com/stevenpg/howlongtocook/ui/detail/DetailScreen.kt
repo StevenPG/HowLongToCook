@@ -54,9 +54,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.stevenpg.howlongtocook.R
 import com.stevenpg.howlongtocook.data.model.Product
 import com.stevenpg.howlongtocook.ui.components.EmptyState
 import com.stevenpg.howlongtocook.ui.components.Pill
@@ -106,23 +108,23 @@ fun DetailContent(
             TopAppBar(
                 title = {},
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
                 },
                 actions = {
                     if (product != null) {
                         IconButton(onClick = onToggleFavorite) {
                             Icon(
                                 if (product.favorite) Icons.Outlined.Star else Icons.Outlined.StarOutline,
-                                contentDescription = if (product.favorite) "Remove from favorites" else "Add to favorites",
+                                contentDescription = if (product.favorite) stringResource(R.string.favorite_remove) else stringResource(R.string.favorite_add),
                                 tint = if (product.favorite) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        IconButton(onClick = { onEdit(product.id) }) { Icon(Icons.Outlined.Edit, contentDescription = "Edit") }
+                        IconButton(onClick = { onEdit(product.id) }) { Icon(Icons.Outlined.Edit, contentDescription = stringResource(R.string.action_edit)) }
                         Box {
-                            IconButton(onClick = { menuOpen = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = "More") }
+                            IconButton(onClick = { menuOpen = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = stringResource(R.string.action_more)) }
                             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                                 DropdownMenuItem(
-                                    text = { Text("Delete") },
+                                    text = { Text(stringResource(R.string.action_delete)) },
                                     leadingIcon = { Icon(Icons.Outlined.Delete, null) },
                                     onClick = { menuOpen = false; confirmDelete = true },
                                 )
@@ -138,10 +140,10 @@ fun DetailContent(
             state.loading -> Unit
             product == null -> EmptyState(
                 icon = Icons.Outlined.Restaurant,
-                title = "Product not found",
-                message = "It may have been deleted on another device.",
+                title = stringResource(R.string.detail_not_found_title),
+                message = stringResource(R.string.detail_not_found_message),
                 modifier = Modifier.padding(padding),
-            ) { OutlinedButton(onClick = onBack) { Text("Back to library") } }
+            ) { OutlinedButton(onClick = onBack) { Text(stringResource(R.string.action_back_to_library)) } }
             else -> Column(
                 Modifier
                     .fillMaxSize()
@@ -154,14 +156,14 @@ fun DetailContent(
                 if (product.methods.isEmpty()) {
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                         Column(Modifier.padding(20.dp).fillMaxWidth()) {
-                            Text("No cooking instructions yet", style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.detail_no_instructions_title), style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                "Add the microwave, oven, air fryer or stovetop steps from the box.",
+                                stringResource(R.string.detail_no_instructions_message),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Spacer(Modifier.height(12.dp))
-                            Button(onClick = { onEdit(product.id) }) { Text("Add instructions") }
+                            Button(onClick = { onEdit(product.id) }) { Text(stringResource(R.string.action_add_instructions)) }
                         }
                     }
                 } else {
@@ -186,7 +188,7 @@ fun DetailContent(
                     ) {
                         Icon(Icons.Outlined.PlayArrow, null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Cook mode", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.action_cook_mode), style = MaterialTheme.typography.titleMedium)
                     }
                 }
                 product.notes?.let { notes ->
@@ -221,14 +223,14 @@ fun DetailContent(
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             icon = { Icon(Icons.Outlined.Delete, null) },
-            title = { Text("Delete \"${product.name}\"?") },
-            text = { Text("It will be removed from this device and from your synced storage.") },
+            title = { Text(stringResource(R.string.delete_dialog_title, product.name)) },
+            text = { Text(stringResource(R.string.delete_dialog_message)) },
             confirmButton = {
                 TextButton(onClick = { confirmDelete = false; onDelete() }) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.action_cancel)) } },
         )
     }
 }

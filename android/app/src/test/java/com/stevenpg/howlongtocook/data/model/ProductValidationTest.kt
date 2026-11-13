@@ -26,9 +26,16 @@ class ProductValidationTest {
 
     @Test
     fun `reports problems`() {
-        val (_, errors) = ProductValidation.normalize(
+        val (_, issues) = ProductValidation.normalize(
             product("a", 1).copy(name = " ", barcodes = listOf("no way!"), rating = 7),
         )
-        assertEquals(3, errors.size)
+        assertEquals(
+            listOf(
+                ValidationIssue(ValidationIssue.Type.NAME_REQUIRED),
+                ValidationIssue(ValidationIssue.Type.INVALID_BARCODE, value = "no way!"),
+                ValidationIssue(ValidationIssue.Type.RATING_OUT_OF_RANGE),
+            ),
+            issues,
+        )
     }
 }

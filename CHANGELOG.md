@@ -25,5 +25,12 @@ The Android app and the server share one version number.
   export and import, permanent removal of deleted products.
 - Docker image (distroless, non-root, healthcheck), Docker Compose and Kubernetes examples.
 - OpenAPI contract, design document, and test suites for both projects.
+- All user-facing text in Android string resources (with plurals), ready for translation;
+  validation, sync and connection errors are typed and mapped to localized messages.
+
+### Fixed
+- The barcode scanner no longer leaks a background thread each time it is opened.
+- Edits made in the product editor before it finished loading (such as a barcode returned
+  by the scanner) are no longer lost.
 
 [Unreleased]: https://github.com/StevenPG/HowLongToCook/commits/main

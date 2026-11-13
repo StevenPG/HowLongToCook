@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import com.stevenpg.howlongtocook.R
 import com.stevenpg.howlongtocook.data.model.MethodType
 import com.stevenpg.howlongtocook.data.model.Product
 import com.stevenpg.howlongtocook.data.model.ProductValidation
@@ -14,10 +15,14 @@ import com.stevenpg.howlongtocook.data.repository.ValidationException
 import com.stevenpg.howlongtocook.data.settings.SettingsRepository
 import com.stevenpg.howlongtocook.data.settings.UnitPreference
 import com.stevenpg.howlongtocook.ui.navigation.EditorRoute
+import com.stevenpg.howlongtocook.ui.text.UiText
+import com.stevenpg.howlongtocook.ui.text.toUiText
+import com.stevenpg.howlongtocook.ui.text.uiText
 import com.stevenpg.howlongtocook.util.defaultUnitFor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,7 +37,7 @@ data class EditorUiState(
     val brand: String = "",
     val barcodes: List<String> = emptyList(),
     val barcodeInput: String = "",
-    val barcodeWarning: String? = null,
+    val barcodeWarning: UiText? = null,
     val tags: List<String> = emptyList(),
     val tagInput: String = "",
     val rating: Int? = null,
@@ -41,8 +46,8 @@ data class EditorUiState(
     val methods: List<MethodDraft> = emptyList(),
     val defaultUnit: TemperatureUnit = TemperatureUnit.F,
     val lookingUp: Boolean = false,
-    val lookupMessage: String? = null,
-    val errors: List<String> = emptyList(),
+    val filledFromLookup: Boolean = false,
+    val errors: List<UiText> = emptyList(),
     val nameError: Boolean = false,
     val saving: Boolean = false,
     val savedId: String? = null,
@@ -59,6 +64,13 @@ class EditorViewModel @Inject constructor(
     private val route = savedStateHandle.toRoute<EditorRoute>()
     private val _state = MutableStateFlow(EditorUiState())
     val state: StateFlow<EditorUiState> = _state.asStateFlow()
+
+    /**
+     * Completes once the product (or a new blank one) is in [state]. Changes requested
+     * before then, such as a barcode returned by the scanner while loading, are queued
+     * behind it instead of being overwritten by the loaded state.
+     */
+    private val loaded = CompletableDeferred<Unit>()
 
     init {
         viewModelScope.launch { load() }
@@ -87,6 +99,7 @@ class EditorViewModel @Inject constructor(
                 methods = existing.methods.map { it.toDraft(unit) },
                 defaultUnit = unit,
             )
+            loaded.complete(Unit)
             return
         }
         val barcode = route.barcode?.trim()?.takeIf { it.isNotEmpty() }
@@ -99,6 +112,7 @@ class EditorViewModel @Inject constructor(
             defaultUnit = unit,
             lookingUp = barcode != null && prefs.openFoodFacts,
         )
+        loaded.complete(Unit)
         if (barcode != null && prefs.openFoodFacts) lookup(barcode)
     }
 
@@ -112,46 +126,75 @@ class EditorViewModel @Inject constructor(
                     lookingUp = false,
                     name = s.name.ifBlank { suggestion.name.orEmpty() },
                     brand = s.brand.ifBlank { suggestion.brand.orEmpty() },
-                    lookupMessage = "Filled in from Open Food Facts. Check it matches your package.",
+                    filledFromLookup = true,
                 )
             }
         }
     }
 
-    private inline fun edit(crossinline f: (EditorUiState) -> EditorUiState) {
+    /** Runs [action] now if loaded, otherwise right after loading, preserving call order. */
+    private fun afterLoad(action: () -> Unit) {
+        if (loaded.isCompleted) {
+            action()
+        } else {
+            viewModelScope.launch {
+                loaded.await()
+                action()
+            }
+        }
+    }
+
+    private fun edit(f: (EditorUiState) -> EditorUiState) = afterLoad {
         _state.update { f(it).copy(changed = true, errors = emptyList()) }
     }
+
+    private fun set(f: (EditorUiState) -> EditorUiState) = afterLoad { _state.update(f) }
 
     fun setName(v: String) = edit { it.copy(name = v, nameError = false) }
     fun setBrand(v: String) = edit { it.copy(brand = v) }
     fun setNotes(v: String) = edit { it.copy(notes = v) }
     fun setRating(v: Int?) = edit { it.copy(rating = v) }
     fun setFavorite(v: Boolean) = edit { it.copy(favorite = v) }
-    fun setBarcodeInput(v: String) = _state.update { it.copy(barcodeInput = v.filter { c -> c.isLetterOrDigit() || c == '-' }) }
-    fun setTagInput(v: String) = _state.update { it.copy(tagInput = v) }
+    fun setBarcodeInput(v: String) = set { it.copy(barcodeInput = v.filter { c -> c.isLetterOrDigit() || c == '-' }) }
+    fun setTagInput(v: String) = set { it.copy(tagInput = v) }
 
-    fun addBarcode(raw: String = state.value.barcodeInput) {
-        val code = raw.trim()
-        if (code.isEmpty()) return
+    fun addBarcode(raw: String? = null) = afterLoad {
+        val code = (raw ?: state.value.barcodeInput).trim()
+        if (code.isEmpty()) return@afterLoad
         if (!ProductValidation.isValidBarcode(code)) {
-            _state.update { it.copy(barcodeWarning = "Barcodes are 4-64 letters, digits or dashes") }
-            return
+            _state.update { it.copy(barcodeWarning = uiText(R.string.editor_barcode_invalid)) }
+            return@afterLoad
         }
-        edit { s -> s.copy(barcodes = (s.barcodes + code).distinct(), barcodeInput = "", barcodeWarning = null) }
+        _state.update { s ->
+            s.copy(
+                barcodes = (s.barcodes + code).distinct(),
+                barcodeInput = if (raw == null) "" else s.barcodeInput,
+                barcodeWarning = null,
+                changed = true,
+                errors = emptyList(),
+            )
+        }
         viewModelScope.launch {
             val others = repository.findByBarcode(code).filter { it.id != state.value.base?.id }
             if (others.isNotEmpty()) {
-                _state.update { it.copy(barcodeWarning = "$code is also saved on \"${others.first().name}\"") }
+                _state.update { it.copy(barcodeWarning = uiText(R.string.editor_barcode_shared, code, others.first().name)) }
             }
         }
     }
 
     fun removeBarcode(code: String) = edit { s -> s.copy(barcodes = s.barcodes - code, barcodeWarning = null) }
 
-    fun addTag(raw: String = state.value.tagInput) {
-        val tags = raw.split(',').map { it.trim() }.filter { it.isNotEmpty() }
-        if (tags.isEmpty()) return
-        edit { s -> s.copy(tags = (s.tags + tags).distinctBy { it.lowercase() }, tagInput = "") }
+    fun addTag(raw: String? = null) = afterLoad {
+        val tags = (raw ?: state.value.tagInput).split(',').map { it.trim() }.filter { it.isNotEmpty() }
+        if (tags.isEmpty()) return@afterLoad
+        _state.update { s ->
+            s.copy(
+                tags = (s.tags + tags).distinctBy { it.lowercase() },
+                tagInput = if (raw == null) "" else s.tagInput,
+                changed = true,
+                errors = emptyList(),
+            )
+        }
     }
 
     fun removeTag(tag: String) = edit { s -> s.copy(tags = s.tags - tag) }
@@ -176,19 +219,18 @@ class EditorViewModel @Inject constructor(
     fun updateStep(methodKey: Long, stepKey: Long, f: (StepDraft) -> StepDraft) =
         updateMethod(methodKey) { m -> m.copy(steps = m.steps.map { if (it.key == stepKey) f(it) else it }) }
 
-    fun save() {
-        val s = state.value
-        val base = s.base ?: return
+    fun save() = afterLoad {
         // Commit anything still typed in the chip inputs.
-        if (s.barcodeInput.isNotBlank()) addBarcode()
-        if (s.tagInput.isNotBlank()) addTag()
+        if (state.value.barcodeInput.isNotBlank()) addBarcode()
+        if (state.value.tagInput.isNotBlank()) addTag()
         val cur = state.value
-        val errors = mutableListOf<String>()
+        val base = cur.base ?: return@afterLoad
+        val errors = mutableListOf<UiText>()
         val methods = cur.methods.mapIndexed { i, m -> m.toMethod(i, errors) }
-        if (cur.name.isBlank()) errors.add(0, "Give the product a name")
+        if (cur.name.isBlank()) errors.add(0, uiText(R.string.editor_error_name))
         if (errors.isNotEmpty()) {
             _state.update { it.copy(errors = errors, nameError = cur.name.isBlank()) }
-            return
+            return@afterLoad
         }
         val product = base.copy(
             name = cur.name,
@@ -206,7 +248,7 @@ class EditorViewModel @Inject constructor(
                 val saved = repository.save(product)
                 _state.update { it.copy(saving = false, savedId = saved.id, changed = false) }
             } catch (e: ValidationException) {
-                _state.update { it.copy(saving = false, errors = e.errors) }
+                _state.update { it.copy(saving = false, errors = e.issues.map { issue -> issue.toUiText() }) }
             }
         }
     }

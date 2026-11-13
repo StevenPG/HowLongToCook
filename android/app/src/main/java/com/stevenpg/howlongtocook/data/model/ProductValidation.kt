@@ -1,5 +1,22 @@
 package com.stevenpg.howlongtocook.data.model
 
+/** A rule violation; mapped to localized text by the UI (see ui/text/Labels.kt). */
+data class ValidationIssue(val type: Type, val value: String? = null, val limit: Int? = null) {
+    enum class Type {
+        NAME_REQUIRED,
+        NAME_TOO_LONG,
+        INVALID_BARCODE,
+        TOO_MANY_BARCODES,
+        TAG_TOO_LONG,
+        TOO_MANY_TAGS,
+        RATING_OUT_OF_RANGE,
+        TOO_MANY_METHODS,
+        TOO_MANY_STEPS,
+        TEMPERATURE_OUT_OF_RANGE,
+        DURATION_OUT_OF_RANGE,
+    }
+}
+
 /** Validation rules shared with the server (server/src/model.rs). */
 object ProductValidation {
     const val MAX_NAME = 200
@@ -17,34 +34,39 @@ object ProductValidation {
 
     fun isValidBarcode(code: String): Boolean = barcodePattern.matches(code)
 
-    /** Normalizes strings/lists exactly as the server does; returns a list of problems (empty = valid). */
-    fun normalize(product: Product): Pair<Product, List<String>> {
-        val errors = mutableListOf<String>()
+    /** Normalizes strings/lists exactly as the server does; returns the problems found (empty = valid). */
+    fun normalize(product: Product): Pair<Product, List<ValidationIssue>> {
+        val issues = mutableListOf<ValidationIssue>()
+        fun add(type: ValidationIssue.Type, value: String? = null, limit: Int? = null) {
+            val issue = ValidationIssue(type, value, limit)
+            if (issue !in issues) issues += issue
+        }
+
         val name = product.name.trim()
-        if (name.isEmpty()) errors += "Name is required"
-        if (name.length > MAX_NAME) errors += "Name must be at most $MAX_NAME characters"
+        if (name.isEmpty()) add(ValidationIssue.Type.NAME_REQUIRED)
+        if (name.length > MAX_NAME) add(ValidationIssue.Type.NAME_TOO_LONG, limit = MAX_NAME)
 
         val barcodes = product.barcodes.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
-        barcodes.filterNot(::isValidBarcode).forEach { errors += "Invalid barcode \"$it\"" }
-        if (barcodes.size > MAX_BARCODES) errors += "At most $MAX_BARCODES barcodes"
+        barcodes.filterNot(::isValidBarcode).forEach { add(ValidationIssue.Type.INVALID_BARCODE, value = it) }
+        if (barcodes.size > MAX_BARCODES) add(ValidationIssue.Type.TOO_MANY_BARCODES, limit = MAX_BARCODES)
 
         val tags = product.tags.map { it.trim() }.filter { it.isNotEmpty() }
             .distinctBy { it.lowercase() }
-        if (tags.any { it.length > MAX_TAG }) errors += "Tags must be at most $MAX_TAG characters"
-        if (tags.size > MAX_TAGS) errors += "At most $MAX_TAGS tags"
+        if (tags.any { it.length > MAX_TAG }) add(ValidationIssue.Type.TAG_TOO_LONG, limit = MAX_TAG)
+        if (tags.size > MAX_TAGS) add(ValidationIssue.Type.TOO_MANY_TAGS, limit = MAX_TAGS)
 
-        if (product.rating != null && product.rating !in 1..5) errors += "Rating must be 1-5"
-        if (product.methods.size > MAX_METHODS) errors += "At most $MAX_METHODS methods"
+        if (product.rating != null && product.rating !in 1..5) add(ValidationIssue.Type.RATING_OUT_OF_RANGE)
+        if (product.methods.size > MAX_METHODS) add(ValidationIssue.Type.TOO_MANY_METHODS, limit = MAX_METHODS)
 
         val methods = product.methods.map { m ->
-            if (m.steps.size > MAX_STEPS) errors += "At most $MAX_STEPS steps per method"
-            m.temperature?.let { if (it.value !in 0..1000) errors += "Temperature out of range" }
+            if (m.steps.size > MAX_STEPS) add(ValidationIssue.Type.TOO_MANY_STEPS, limit = MAX_STEPS)
+            m.temperature?.let { if (it.value !in 0..1000) add(ValidationIssue.Type.TEMPERATURE_OUT_OF_RANGE) }
             m.copy(
                 power = m.power.clean(),
                 notes = m.notes.clean(),
                 steps = m.steps.map { s ->
                     s.durationSeconds?.let {
-                        if (it !in 0..MAX_DURATION_SECONDS) errors += "Step duration out of range"
+                        if (it !in 0..MAX_DURATION_SECONDS) add(ValidationIssue.Type.DURATION_OUT_OF_RANGE)
                     }
                     s.copy(note = s.note.clean())
                 },
@@ -58,7 +80,7 @@ object ProductValidation {
             tags = tags,
             methods = methods,
         )
-        return normalized to errors
+        return normalized to issues
     }
 
     private fun String?.clean(): String? = this?.trim()?.takeIf { it.isNotEmpty() }

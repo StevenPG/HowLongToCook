@@ -48,8 +48,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.stevenpg.howlongtocook.R
+import com.stevenpg.howlongtocook.ui.text.UiText
+import com.stevenpg.howlongtocook.ui.text.asString
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
@@ -63,9 +67,9 @@ fun StorageSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Storage") },
+                title = { Text(stringResource(R.string.settings_storage)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
                 },
             )
         },
@@ -80,7 +84,7 @@ fun StorageSettingsScreen(
                 .padding(16.dp),
         ) {
             Text(
-                "Products are always stored on this device first. Choose where they should also be synced.",
+                stringResource(R.string.storage_intro),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -99,10 +103,10 @@ fun StorageSettingsScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                 if (state.option != StorageOption.LOCAL) {
                     OutlinedButton(onClick = viewModel::test, enabled = state.test != TestState.Running, modifier = Modifier.weight(1f)) {
-                        Text("Test connection")
+                        Text(stringResource(R.string.storage_test))
                     }
                 }
-                Button(onClick = viewModel::save, modifier = Modifier.weight(1f)) { Text("Save") }
+                Button(onClick = viewModel::save, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.action_save)) }
             }
         }
     }
@@ -123,8 +127,8 @@ private fun OptionCard(option: StorageOption, selected: Boolean, onSelect: () ->
             RadioButton(selected = selected, onClick = null)
             Spacer(Modifier.width(12.dp))
             Column {
-                Text(option.title, style = MaterialTheme.typography.titleMedium)
-                Text(option.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(option.title), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(option.subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -135,31 +139,31 @@ private fun S3Form(state: StorageUiState, vm: StorageSettingsViewModel) {
     val s3 = state.s3
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         when (state.option) {
-            StorageOption.R2 -> Field("Cloudflare account ID", s3.accountId, "From the R2 overview page") { v -> vm.updateS3 { it.copy(accountId = v) } }
+            StorageOption.R2 -> Field(stringResource(R.string.storage_account_id), s3.accountId, stringResource(R.string.storage_account_id_hint)) { v -> vm.updateS3 { it.copy(accountId = v) } }
             StorageOption.S3_COMPATIBLE -> {
-                Field("Endpoint URL", s3.endpoint, "e.g. https://minio.example.com:9000", KeyboardType.Uri) { v -> vm.updateS3 { it.copy(endpoint = v) } }
-                Field("Region", s3.region, "us-east-1 if unsure") { v -> vm.updateS3 { it.copy(region = v) } }
+                Field(stringResource(R.string.storage_endpoint), s3.endpoint, stringResource(R.string.storage_endpoint_hint), KeyboardType.Uri) { v -> vm.updateS3 { it.copy(endpoint = v) } }
+                Field(stringResource(R.string.storage_region), s3.region, stringResource(R.string.storage_region_hint_custom)) { v -> vm.updateS3 { it.copy(region = v) } }
             }
-            else -> Field("Region", s3.region, "e.g. us-east-1") { v -> vm.updateS3 { it.copy(region = v) } }
+            else -> Field(stringResource(R.string.storage_region), s3.region, stringResource(R.string.storage_region_hint_aws)) { v -> vm.updateS3 { it.copy(region = v) } }
         }
-        Field("Bucket", s3.bucket) { v -> vm.updateS3 { it.copy(bucket = v) } }
-        Field("Access key ID", s3.accessKeyId) { v -> vm.updateS3 { it.copy(accessKeyId = v) } }
+        Field(stringResource(R.string.storage_bucket), s3.bucket) { v -> vm.updateS3 { it.copy(bucket = v) } }
+        Field(stringResource(R.string.storage_access_key), s3.accessKeyId) { v -> vm.updateS3 { it.copy(accessKeyId = v) } }
         SecretField(
-            label = "Secret access key",
+            label = stringResource(R.string.storage_secret_key),
             value = state.s3Secret,
             hasSaved = state.hasSavedS3Secret,
             onChange = vm::setS3Secret,
         )
-        Field("Folder prefix", s3.prefix, "The library is stored at ${s3.objectKey()}") { v -> vm.updateS3 { it.copy(prefix = v) } }
+        Field(stringResource(R.string.storage_prefix), s3.prefix, stringResource(R.string.storage_prefix_hint, s3.objectKey())) { v -> vm.updateS3 { it.copy(prefix = v) } }
         if (state.option == StorageOption.AWS) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Path-style URLs", Modifier.weight(1f))
+                Text(stringResource(R.string.storage_path_style), Modifier.weight(1f))
                 Switch(checked = s3.pathStyle, onCheckedChange = { c -> vm.updateS3 { it.copy(pathStyle = c) } })
             }
         }
         if (state.option == StorageOption.R2) {
             Text(
-                "Create an R2 API token with Object Read & Write access to this bucket, then use its Access Key ID and Secret Access Key.",
+                stringResource(R.string.storage_r2_help),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -170,19 +174,19 @@ private fun S3Form(state: StorageUiState, vm: StorageSettingsViewModel) {
 @Composable
 private fun ServerForm(state: StorageUiState, vm: StorageSettingsViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Field("Server URL", state.serverUrl, "e.g. https://cook.example.com", KeyboardType.Uri, onChange = vm::setServerUrl)
+        Field(stringResource(R.string.storage_server_url), state.serverUrl, stringResource(R.string.storage_server_url_hint), KeyboardType.Uri, onChange = vm::setServerUrl)
         if (state.serverUrl.trim().startsWith("http://")) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Warning, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.tertiary)
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    "Not encrypted. Only use http:// on a network you trust.",
+                    stringResource(R.string.storage_http_warning),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.tertiary,
                 )
             }
         }
-        SecretField("Access token", state.serverToken, state.hasSavedServerToken, vm::setServerToken)
+        SecretField(stringResource(R.string.storage_token), state.serverToken, state.hasSavedServerToken, vm::setServerToken)
     }
 }
 
@@ -212,8 +216,8 @@ private fun SecretField(label: String, value: String, hasSaved: Boolean, onChang
         value = value,
         onValueChange = onChange,
         label = { Text(label) },
-        placeholder = if (hasSaved) ({ Text("Saved — leave blank to keep") }) else null,
-        supportingText = { Text("Encrypted with the Android Keystore; never included in backups") },
+        placeholder = if (hasSaved) ({ Text(stringResource(R.string.storage_secret_saved)) }) else null,
+        supportingText = { Text(stringResource(R.string.storage_secret_help)) },
         singleLine = true,
         visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
@@ -221,7 +225,7 @@ private fun SecretField(label: String, value: String, hasSaved: Boolean, onChang
             IconButton(onClick = { visible = !visible }) {
                 Icon(
                     if (visible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                    contentDescription = if (visible) "Hide" else "Show",
+                    contentDescription = if (visible) stringResource(R.string.action_hide) else stringResource(R.string.action_show),
                 )
             }
         },
@@ -236,7 +240,7 @@ private fun TestResult(test: TestState) {
         TestState.Running -> Row(verticalAlignment = Alignment.CenterVertically) {
             CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
             Spacer(Modifier.width(10.dp))
-            Text("Testing connection…")
+            Text(stringResource(R.string.storage_testing))
         }
         is TestState.Ok -> ResultCard(test.message, ok = true)
         is TestState.Failed -> ResultCard(test.message, ok = false)
@@ -244,7 +248,7 @@ private fun TestResult(test: TestState) {
 }
 
 @Composable
-private fun ResultCard(message: String, ok: Boolean) {
+private fun ResultCard(message: UiText, ok: Boolean) {
     Card(
         colors = CardDefaults.cardColors(
             containerColor = if (ok) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.errorContainer,
@@ -255,7 +259,7 @@ private fun ResultCard(message: String, ok: Boolean) {
         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(if (ok) Icons.Outlined.CheckCircle else Icons.Outlined.ErrorOutline, null)
             Spacer(Modifier.width(10.dp))
-            Text(message)
+            Text(message.asString())
         }
     }
 }

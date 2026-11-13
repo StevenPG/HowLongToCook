@@ -72,13 +72,16 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.stevenpg.howlongtocook.R
 import com.stevenpg.howlongtocook.ui.components.EmptyState
 
 @Composable
@@ -107,7 +110,15 @@ fun ScannerScreen(
     val analyzer = remember {
         BarcodeAnalyzer { code -> viewModel.onBarcode(code) }
     }
-    val controller = remember { createController(context, analyzer) }
+    // One analysis thread per scanner visit, released when the screen leaves composition.
+    val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
+    val controller = remember { createController(context, analyzer, analysisExecutor) }
+    DisposableEffect(Unit) {
+        onDispose {
+            controller.clearImageAnalysisAnalyzer()
+            analysisExecutor.shutdown()
+        }
+    }
 
     LaunchedEffect(outcome) {
         when (val o = outcome) {
@@ -136,8 +147,8 @@ fun ScannerScreen(
             Surface(Modifier.fillMaxSize()) {
                 EmptyState(
                     icon = Icons.Outlined.NoPhotography,
-                    title = "Camera access needed",
-                    message = "HowLongToCook uses the camera only to read barcodes. Nothing is recorded or uploaded.",
+                    title = stringResource(R.string.scanner_permission_title),
+                    message = stringResource(R.string.scanner_permission_message),
                     modifier = Modifier.align(Alignment.Center).padding(top = 96.dp),
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -149,8 +160,8 @@ fun ScannerScreen(
                             } else {
                                 permissionLauncher.launch(Manifest.permission.CAMERA)
                             }
-                        }) { Text(if (askedOnce) "Open app settings" else "Allow camera") }
-                        TextButton(onClick = { manualEntry = true }) { Text("Enter barcode manually") }
+                        }) { Text(stringResource(if (askedOnce) R.string.scanner_open_settings else R.string.scanner_allow_camera)) }
+                        TextButton(onClick = { manualEntry = true }) { Text(stringResource(R.string.scanner_enter_manually_long)) }
                     }
                 }
             }
@@ -162,7 +173,7 @@ fun ScannerScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             FilledTonalIconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back))
             }
             if (hasPermission) TorchButton(controller)
         }
@@ -176,13 +187,13 @@ fun ScannerScreen(
             ) {
                 Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        if (viewModel.addToEditor) "Scan a barcode to add it" else "Point the camera at a barcode",
+                        stringResource(if (viewModel.addToEditor) R.string.scanner_prompt_add else R.string.scanner_prompt_lookup),
                         style = MaterialTheme.typography.titleMedium,
                         textAlign = TextAlign.Center,
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Hold steady with good light. Turn on the torch in a dark freezer.",
+                        stringResource(R.string.scanner_hint),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -191,7 +202,7 @@ fun ScannerScreen(
                     FilledTonalButton(onClick = { manualEntry = true }) {
                         Icon(Icons.Outlined.Keyboard, null)
                         Spacer(Modifier.padding(4.dp))
-                        Text("Enter manually")
+                        Text(stringResource(R.string.scanner_enter_manually))
                     }
                 }
             }
@@ -208,7 +219,7 @@ fun ScannerScreen(
     (outcome as? ScanOutcome.Choose)?.let { choose ->
         AlertDialog(
             onDismissRequest = { viewModel.consumed(); analyzer.resume() },
-            title = { Text("Several products use ${choose.code}") },
+            title = { Text(stringResource(R.string.scanner_multiple_title, choose.code)) },
             text = {
                 Column {
                     choose.products.forEach { p ->
@@ -221,16 +232,16 @@ fun ScannerScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { viewModel.consumed(); onCreateProduct(choose.code) }) { Text("Add new product") }
+                TextButton(onClick = { viewModel.consumed(); onCreateProduct(choose.code) }) { Text(stringResource(R.string.scanner_add_new)) }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.consumed(); analyzer.resume() }) { Text("Scan again") }
+                TextButton(onClick = { viewModel.consumed(); analyzer.resume() }) { Text(stringResource(R.string.scanner_scan_again)) }
             },
         )
     }
 }
 
-private fun createController(context: android.content.Context, analyzer: BarcodeAnalyzer) =
+private fun createController(context: android.content.Context, analyzer: BarcodeAnalyzer, executor: Executor) =
     LifecycleCameraController(context).apply {
         setEnabledUseCases(CameraController.IMAGE_ANALYSIS)
         imageAnalysisBackpressureStrategy = ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST
@@ -239,7 +250,7 @@ private fun createController(context: android.content.Context, analyzer: Barcode
                 ResolutionStrategy(Size(1280, 720), ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER),
             )
             .build()
-        setImageAnalysisAnalyzer(Executors.newSingleThreadExecutor(), analyzer)
+        setImageAnalysisAnalyzer(executor, analyzer)
     }
 
 @Composable
@@ -279,7 +290,7 @@ private fun TorchButton(controller: LifecycleCameraController) {
     ) {
         Icon(
             if (on) Icons.Outlined.FlashlightOn else Icons.Outlined.FlashlightOff,
-            contentDescription = if (on) "Turn torch off" else "Turn torch on",
+            contentDescription = stringResource(if (on) R.string.scanner_torch_off else R.string.scanner_torch_on),
         )
     }
 }
@@ -310,18 +321,18 @@ private fun ManualEntryDialog(onDismiss: () -> Unit, onSubmit: (String) -> Unit)
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Outlined.Keyboard, null) },
-        title = { Text("Enter barcode") },
+        title = { Text(stringResource(R.string.scanner_manual_title)) },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { v -> text = v.filter { it.isLetterOrDigit() || it == '-' }.take(64) },
-                label = { Text("Barcode number") },
+                label = { Text(stringResource(R.string.scanner_manual_label)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { if (valid) onSubmit(text) }),
             )
         },
-        confirmButton = { TextButton(onClick = { onSubmit(text) }, enabled = valid) { Text("Look up") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { onSubmit(text) }, enabled = valid) { Text(stringResource(R.string.scanner_look_up)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }

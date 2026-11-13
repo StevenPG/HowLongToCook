@@ -61,9 +61,11 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.stevenpg.howlongtocook.R
 import com.stevenpg.howlongtocook.data.model.Product
 import com.stevenpg.howlongtocook.ui.components.EmptyState
 import com.stevenpg.howlongtocook.ui.components.IconBadge
@@ -111,11 +113,11 @@ fun LibraryContent(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
-                title = { Text("HowLongToCook") },
+                title = { Text(stringResource(R.string.app_name)) },
                 actions = {
                     SyncStatusIcon(state.sync, state.syncError)
-                    IconButton(onClick = onAddProduct) { Icon(Icons.Outlined.Add, contentDescription = "Add product") }
-                    IconButton(onClick = onOpenSettings) { Icon(Icons.Outlined.Settings, contentDescription = "Settings") }
+                    IconButton(onClick = onAddProduct) { Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.action_add_product)) }
+                    IconButton(onClick = onOpenSettings) { Icon(Icons.Outlined.Settings, contentDescription = stringResource(R.string.action_settings)) }
                 },
                 scrollBehavior = scrollBehavior,
             )
@@ -124,7 +126,7 @@ fun LibraryContent(
             ExtendedFloatingActionButton(
                 onClick = onScan,
                 icon = { Icon(Icons.Outlined.QrCodeScanner, contentDescription = null) },
-                text = { Text("Scan") },
+                text = { Text(stringResource(R.string.action_scan)) },
                 modifier = Modifier.testTag("scan_fab"),
             )
         },
@@ -138,17 +140,17 @@ fun LibraryContent(
                 state.loading -> Unit
                 state.totalCount == 0 -> EmptyState(
                     icon = Icons.Outlined.Restaurant,
-                    title = "Your freezer, organized",
-                    message = "Scan a package barcode or add a product to save its cooking instructions before the box hits the recycling.",
+                    title = stringResource(R.string.library_empty_title),
+                    message = stringResource(R.string.library_empty_message),
                     modifier = Modifier.align(Alignment.Center),
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Button(onClick = onScan) {
                             Icon(Icons.Outlined.QrCodeScanner, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text("Scan barcode")
+                            Text(stringResource(R.string.action_scan_barcode))
                         }
-                        OutlinedButton(onClick = onAddProduct) { Text("Add manually") }
+                        OutlinedButton(onClick = onAddProduct) { Text(stringResource(R.string.action_add_manually)) }
                     }
                 }
                 else -> LazyColumn(
@@ -162,7 +164,7 @@ fun LibraryContent(
                         FilterRow(state, onFilterChange)
                     }
                     if (state.query.isBlank() && state.filter == LibraryFilter.All && state.recent.isNotEmpty()) {
-                        item { SectionHeader("Recently viewed") }
+                        item { SectionHeader(stringResource(R.string.library_recently_viewed)) }
                         item {
                             LazyRow(
                                 contentPadding = PaddingValues(horizontal = 16.dp),
@@ -173,16 +175,16 @@ fun LibraryContent(
                                 }
                             }
                         }
-                        item { SectionHeader("All products", Modifier.padding(top = 8.dp)) }
+                        item { SectionHeader(stringResource(R.string.library_all_products), Modifier.padding(top = 8.dp)) }
                     }
                     if (state.products.isEmpty()) {
                         item {
                             EmptyState(
                                 icon = Icons.Outlined.SearchOff,
-                                title = "No matches",
-                                message = if (state.query.isNotBlank()) "Nothing matches \"${state.query.trim()}\"." else "No products in this filter yet.",
+                                title = stringResource(R.string.library_no_matches_title),
+                                message = if (state.query.isNotBlank()) stringResource(R.string.library_no_matches_query, state.query.trim()) else stringResource(R.string.library_no_matches_filter),
                             ) {
-                                OutlinedButton(onClick = onAddProduct) { Text("Add a product") }
+                                OutlinedButton(onClick = onAddProduct) { Text(stringResource(R.string.action_add_a_product)) }
                             }
                         }
                     }
@@ -205,11 +207,11 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit, onClear:
     TextField(
         value = query,
         onValueChange = onQueryChange,
-        placeholder = { Text("Search name, brand, tag or barcode") },
+        placeholder = { Text(stringResource(R.string.library_search_hint)) },
         leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
         trailingIcon = {
             if (query.isNotEmpty()) {
-                IconButton(onClick = onClear) { Icon(Icons.Outlined.Close, contentDescription = "Clear search") }
+                IconButton(onClick = onClear) { Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.action_clear_search)) }
             }
         },
         singleLine = true,
@@ -237,14 +239,14 @@ private fun FilterRow(state: LibraryUiState, onFilterChange: (LibraryFilter) -> 
             FilterChip(
                 selected = state.filter == LibraryFilter.All,
                 onClick = { onFilterChange(LibraryFilter.All) },
-                label = { Text("All") },
+                label = { Text(stringResource(R.string.filter_all)) },
             )
         }
         item {
             FilterChip(
                 selected = state.filter == LibraryFilter.Favorites,
                 onClick = { onFilterChange(LibraryFilter.Favorites) },
-                label = { Text("Favorites") },
+                label = { Text(stringResource(R.string.filter_favorites)) },
                 leadingIcon = { Icon(Icons.Outlined.Star, null, Modifier.size(18.dp)) },
             )
         }
@@ -312,7 +314,7 @@ fun ProductRow(
             IconButton(onClick = onToggleFavorite) {
                 Icon(
                     if (product.favorite) Icons.Outlined.Star else Icons.Outlined.StarOutline,
-                    contentDescription = if (product.favorite) "Remove from favorites" else "Add to favorites",
+                    contentDescription = if (product.favorite) stringResource(R.string.favorite_remove) else stringResource(R.string.favorite_add),
                     tint = if (product.favorite) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.outline,
                 )
             }
@@ -324,11 +326,11 @@ fun ProductRow(
 private fun SyncStatusIcon(indicator: SyncIndicator, error: String?) {
     if (indicator == SyncIndicator.LOCAL_ONLY) return
     val (icon, label) = when (indicator) {
-        SyncIndicator.SYNCED -> Icons.Outlined.CloudDone to "All changes synced"
-        SyncIndicator.PENDING -> Icons.Outlined.CloudUpload to "Changes waiting to sync"
-        SyncIndicator.SYNCING -> Icons.Outlined.CloudSync to "Syncing…"
-        SyncIndicator.ERROR -> Icons.Outlined.ErrorOutline to "Sync failed: ${error ?: "unknown error"}"
-        SyncIndicator.LOCAL_ONLY -> Icons.Outlined.CloudOff to "Local only"
+        SyncIndicator.SYNCED -> Icons.Outlined.CloudDone to stringResource(R.string.sync_synced)
+        SyncIndicator.PENDING -> Icons.Outlined.CloudUpload to stringResource(R.string.sync_pending)
+        SyncIndicator.SYNCING -> Icons.Outlined.CloudSync to stringResource(R.string.sync_syncing)
+        SyncIndicator.ERROR -> Icons.Outlined.ErrorOutline to stringResource(R.string.sync_failed, error ?: stringResource(R.string.error_unknown))
+        SyncIndicator.LOCAL_ONLY -> Icons.Outlined.CloudOff to stringResource(R.string.sync_local_only)
     }
     TooltipBox(
         positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),

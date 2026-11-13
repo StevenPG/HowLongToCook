@@ -49,10 +49,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.stevenpg.howlongtocook.R
 import com.stevenpg.howlongtocook.BuildConfig
 import com.stevenpg.howlongtocook.data.settings.AppSettings
 import com.stevenpg.howlongtocook.data.settings.S3Provider
@@ -73,6 +76,7 @@ fun SettingsScreen(
     val syncing by viewModel.syncing.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    val resources = LocalResources.current
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -84,7 +88,7 @@ fun SettingsScreen(
     }
     LaunchedEffect(message) {
         message?.let {
-            snackbar.showSnackbar(it)
+            snackbar.showSnackbar(it.resolve(resources))
             viewModel.messageShown()
         }
     }
@@ -94,9 +98,9 @@ fun SettingsScreen(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             androidx.compose.material3.LargeTopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
                 },
                 scrollBehavior = scrollBehavior,
             )
@@ -104,24 +108,24 @@ fun SettingsScreen(
     ) { padding ->
         val s = settings ?: return@Scaffold
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
-            SectionHeader("Storage & sync")
+            SectionHeader(stringResource(R.string.settings_storage_sync))
             ListItem(
-                headlineContent = { Text("Storage") },
+                headlineContent = { Text(stringResource(R.string.settings_storage)) },
                 supportingContent = { Text(storageSummary(s)) },
                 leadingContent = { Icon(Icons.Outlined.Cloud, null) },
                 modifier = Modifier.clickable(onClick = onOpenStorage),
             )
             if (s.storageMode != StorageMode.LOCAL) {
                 ListItem(
-                    headlineContent = { Text("Sync now") },
+                    headlineContent = { Text(stringResource(R.string.settings_sync_now)) },
                     supportingContent = {
                         val err = s.sync.lastError
                         Text(
                             when {
-                                syncing -> "Syncing…"
-                                err != null -> "Last attempt failed: $err"
-                                s.sync.lastSuccessAt != null -> "Last synced ${DateUtils.getRelativeTimeSpanString(s.sync.lastSuccessAt)}"
-                                else -> "Not synced yet"
+                                syncing -> stringResource(R.string.sync_syncing)
+                                err != null -> stringResource(R.string.settings_last_failed, err)
+                                s.sync.lastSuccessAt != null -> stringResource(R.string.settings_last_synced, DateUtils.getRelativeTimeSpanString(s.sync.lastSuccessAt).toString())
+                                else -> stringResource(R.string.settings_not_synced)
                             },
                             color = if (err != null && !syncing) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -133,72 +137,72 @@ fun SettingsScreen(
             }
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-            SectionHeader("Appearance")
+            SectionHeader(stringResource(R.string.settings_appearance))
             ListItem(
-                headlineContent = { Text("Theme") },
+                headlineContent = { Text(stringResource(R.string.settings_theme)) },
                 leadingContent = { Icon(Icons.Outlined.DarkMode, null) },
             )
             Segmented(
                 options = ThemeMode.entries,
                 selected = s.themeMode,
-                label = { when (it) { ThemeMode.SYSTEM -> "System"; ThemeMode.LIGHT -> "Light"; ThemeMode.DARK -> "Dark" } },
+                label = { when (it) { ThemeMode.SYSTEM -> R.string.theme_system; ThemeMode.LIGHT -> R.string.theme_light; ThemeMode.DARK -> R.string.theme_dark } },
                 onSelect = viewModel::setTheme,
             )
             ListItem(
-                headlineContent = { Text("Dynamic color") },
-                supportingContent = { Text("Use colors from your wallpaper instead of the HowLongToCook palette") },
+                headlineContent = { Text(stringResource(R.string.settings_dynamic_color)) },
+                supportingContent = { Text(stringResource(R.string.settings_dynamic_color_summary)) },
                 leadingContent = { Icon(Icons.Outlined.Palette, null) },
                 trailingContent = { Switch(checked = s.dynamicColor, onCheckedChange = viewModel::setDynamicColor) },
             )
             ListItem(
-                headlineContent = { Text("Temperature unit") },
+                headlineContent = { Text(stringResource(R.string.settings_temperature_unit)) },
                 leadingContent = { Icon(Icons.Outlined.Thermostat, null) },
             )
             Segmented(
                 options = UnitPreference.entries,
                 selected = s.unit,
-                label = { when (it) { UnitPreference.AUTO -> "Auto"; UnitPreference.FAHRENHEIT -> "°F"; UnitPreference.CELSIUS -> "°C" } },
+                label = { when (it) { UnitPreference.AUTO -> R.string.unit_auto; UnitPreference.FAHRENHEIT -> R.string.unit_fahrenheit; UnitPreference.CELSIUS -> R.string.unit_celsius } },
                 onSelect = viewModel::setUnit,
             )
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-            SectionHeader("Product lookup")
+            SectionHeader(stringResource(R.string.settings_lookup))
             ListItem(
-                headlineContent = { Text("Open Food Facts") },
-                supportingContent = { Text("Fill in the name and brand of newly scanned products. Only the barcode is sent.") },
+                headlineContent = { Text(stringResource(R.string.settings_open_food_facts)) },
+                supportingContent = { Text(stringResource(R.string.settings_open_food_facts_summary)) },
                 leadingContent = { Icon(Icons.Outlined.TravelExplore, null) },
                 trailingContent = { Switch(checked = s.openFoodFacts, onCheckedChange = viewModel::setOpenFoodFacts) },
             )
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-            SectionHeader("Backup")
+            SectionHeader(stringResource(R.string.settings_backup))
             ListItem(
-                headlineContent = { Text("Export library") },
-                supportingContent = { Text("Save every product to a JSON file") },
+                headlineContent = { Text(stringResource(R.string.settings_export)) },
+                supportingContent = { Text(stringResource(R.string.settings_export_summary)) },
                 leadingContent = { Icon(Icons.Outlined.Download, null) },
                 modifier = Modifier.clickable { exportLauncher.launch(viewModel.suggestedExportName()) },
             )
             ListItem(
-                headlineContent = { Text("Import library") },
-                supportingContent = { Text("Merge a JSON export; newer versions win") },
+                headlineContent = { Text(stringResource(R.string.settings_import)) },
+                supportingContent = { Text(stringResource(R.string.settings_import_summary)) },
                 leadingContent = { Icon(Icons.Outlined.Upload, null) },
                 modifier = Modifier.clickable { importLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
             )
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-            SectionHeader("About")
+            SectionHeader(stringResource(R.string.settings_about))
             ListItem(
-                headlineContent = { Text("HowLongToCook") },
-                supportingContent = { Text("Version ${BuildConfig.VERSION_NAME}") },
+                headlineContent = { Text(stringResource(R.string.app_name)) },
+                supportingContent = { Text(stringResource(R.string.settings_version, BuildConfig.VERSION_NAME)) },
                 leadingContent = { Icon(Icons.Outlined.Info, null) },
             )
             ListItem(
-                headlineContent = { Text("License") },
-                supportingContent = { Text("GNU General Public License v3.0 or later") },
+                headlineContent = { Text(stringResource(R.string.settings_license)) },
+                supportingContent = { Text(stringResource(R.string.settings_license_summary)) },
                 leadingContent = { Icon(Icons.Outlined.Gavel, null) },
             )
             ListItem(
-                headlineContent = { Text("Source code") },
+                headlineContent = { Text(stringResource(R.string.settings_source)) },
                 supportingContent = { Text(SOURCE_URL.removePrefix("https://")) },
                 leadingContent = { Icon(Icons.Outlined.Code, null) },
                 modifier = Modifier.clickable {
@@ -211,21 +215,25 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun <T> Segmented(options: List<T>, selected: T, label: (T) -> String, onSelect: (T) -> Unit) {
+private fun <T> Segmented(options: List<T>, selected: T, label: (T) -> Int, onSelect: (T) -> Unit) {
     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(start = 56.dp, end = 16.dp, bottom = 8.dp)) {
         options.forEachIndexed { i, o ->
             SegmentedButton(
                 selected = o == selected,
                 onClick = { onSelect(o) },
                 shape = SegmentedButtonDefaults.itemShape(i, options.size),
-            ) { Text(label(o)) }
+            ) { Text(stringResource(label(o))) }
         }
     }
 }
 
+@Composable
 private fun storageSummary(s: AppSettings): String = when (s.storageMode) {
-    StorageMode.LOCAL -> "This device only"
-    StorageMode.SERVER -> "Self-hosted · ${s.server.baseUrl.removePrefix("https://").removePrefix("http://")}"
-    StorageMode.R2 -> "Cloudflare R2 · ${s.s3.bucket}"
-    StorageMode.S3 -> if (s.s3.provider == S3Provider.CUSTOM) "S3-compatible · ${s.s3.bucket}" else "Amazon S3 · ${s.s3.bucket}"
+    StorageMode.LOCAL -> stringResource(R.string.storage_summary_local)
+    StorageMode.SERVER -> stringResource(R.string.storage_summary_server, s.server.baseUrl.removePrefix("https://").removePrefix("http://"))
+    StorageMode.R2 -> stringResource(R.string.storage_summary_r2, s.s3.bucket)
+    StorageMode.S3 -> stringResource(
+        if (s.s3.provider == S3Provider.CUSTOM) R.string.storage_summary_custom else R.string.storage_summary_aws,
+        s.s3.bucket,
+    )
 }

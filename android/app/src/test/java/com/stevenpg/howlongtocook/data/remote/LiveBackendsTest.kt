@@ -45,7 +45,7 @@ class LiveBackendsTest {
         val key = "it-$runId/folder with space/library.json"
         val store = S3RemoteStore(client, key, key)
 
-        assertTrue(store.testConnection().contains("No library yet"))
+        assertEquals(null, store.testConnection().productCount)
         val a = product("a-$runId", 1, "Live A")
         store.sync(listOf(LocalRecord(a, dirty = true)), null)
         val first = client.getObject(key)!!
@@ -69,7 +69,7 @@ class LiveBackendsTest {
         val url = System.getenv("HLTC_LIVE_SERVER_URL")
         assumeTrue("HLTC_LIVE_SERVER_URL not set", url != null)
         val store = ServerRemoteStore(http, url!!, System.getenv("HLTC_LIVE_SERVER_TOKEN") ?: "dev-token-change-me")
-        assertTrue(store.testConnection().startsWith("Connected to server"))
+        assertTrue(store.testConnection().serverVersion != null)
 
         val p = product("srv-$runId", 100, "Server item")
         val pushed = store.sync(listOf(LocalRecord(p, dirty = true)), null)

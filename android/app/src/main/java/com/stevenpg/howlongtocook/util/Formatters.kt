@@ -1,5 +1,10 @@
 package com.stevenpg.howlongtocook.util
 
+import android.content.res.Resources
+import androidx.annotation.StringRes
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalResources
+import com.stevenpg.howlongtocook.R
 import com.stevenpg.howlongtocook.data.model.CookingMethod
 import com.stevenpg.howlongtocook.data.model.MethodType
 import com.stevenpg.howlongtocook.data.model.Step
@@ -18,7 +23,7 @@ fun defaultUnitFor(locale: Locale): TemperatureUnit =
 /**
  * Converts for display. Same-unit values are shown exactly as printed on the box;
  * converted values snap to conventional oven-dial steps (25°F / 10°C), so 400°F reads
- * as 200°C and 180°C as 350°F — matching what packaging prints in each unit.
+ * as 200°C and 180°C as 350°F, matching what packaging prints in each unit.
  */
 fun Temperature.displayIn(unit: TemperatureUnit): String {
     val shown = when {
@@ -31,21 +36,21 @@ fun Temperature.displayIn(unit: TemperatureUnit): String {
 
 private fun roundTo(v: Double, step: Int): Int = (v / step).roundToInt() * step
 
-/** "7 min", "1:30", "45 sec", "1 hr 15 min". */
-fun formatDuration(seconds: Int): String {
+/** "7 min", "1:30", "45 sec", "1 hr 15 min" (localized). */
+fun formatDuration(res: Resources, seconds: Int): String {
     val h = seconds / 3600
     val m = (seconds % 3600) / 60
     val s = seconds % 60
     return when {
-        h == 0 && m == 0 -> "$s sec"
-        h == 0 && s == 0 -> "$m min"
-        h == 0 -> "%d:%02d".format(m, s)
-        m == 0 && s == 0 -> "$h hr"
-        else -> "$h hr $m min"
+        h == 0 && m == 0 -> res.getString(R.string.duration_seconds, s)
+        h == 0 && s == 0 -> res.getString(R.string.duration_minutes, m)
+        h == 0 -> res.getString(R.string.duration_minutes_seconds, m, s)
+        m == 0 && s == 0 -> res.getString(R.string.duration_hours, h)
+        else -> res.getString(R.string.duration_hours_minutes, h, m)
     }
 }
 
-/** "4:00" or "1:05:00". */
+/** "4:00" or "1:05:00". Digits only, so not localized. */
 fun formatClock(seconds: Int): String {
     val h = seconds / 3600
     val m = (seconds % 3600) / 60
@@ -67,33 +72,63 @@ fun parseClock(text: String): Int? {
     }
 }
 
-fun StepAction.label(): String = when (this) {
-    StepAction.COOK -> "Cook"
-    StepAction.STIR -> "Stir"
-    StepAction.FLIP -> "Flip"
-    StepAction.SHAKE -> "Shake"
-    StepAction.STAND -> "Let stand"
-    StepAction.VENT -> "Vent"
-    StepAction.REMOVE -> "Remove"
-    StepAction.OTHER -> "Other"
-}
+@get:StringRes
+val StepAction.labelRes: Int
+    get() = when (this) {
+        StepAction.COOK -> R.string.step_cook
+        StepAction.STIR -> R.string.step_stir
+        StepAction.FLIP -> R.string.step_flip
+        StepAction.SHAKE -> R.string.step_shake
+        StepAction.STAND -> R.string.step_stand
+        StepAction.VENT -> R.string.step_vent
+        StepAction.REMOVE -> R.string.step_remove
+        StepAction.OTHER -> R.string.step_other
+    }
 
-/** "Cook 4:00" / "Stir" — the note is rendered separately. */
-fun Step.title(): String = buildString {
-    append(if (action == StepAction.OTHER && !note.isNullOrBlank()) note else action.label())
-    durationSeconds?.takeIf { it > 0 }?.let { append(" ").append(formatClock(it)) }
+@get:StringRes
+val MethodType.labelRes: Int
+    get() = when (this) {
+        MethodType.MICROWAVE -> R.string.method_microwave
+        MethodType.OVEN -> R.string.method_oven
+        MethodType.AIR_FRYER -> R.string.method_air_fryer
+        MethodType.STOVETOP -> R.string.method_stovetop
+    }
+
+fun StepAction.label(res: Resources): String = res.getString(labelRes)
+
+fun MethodType.label(res: Resources): String = res.getString(labelRes)
+
+/** "Cook 4:00" / "Stir"; an OTHER step uses its note as the title. The note is shown separately otherwise. */
+fun Step.title(res: Resources): String {
+    val base = if (action == StepAction.OTHER && !note.isNullOrBlank()) note else action.label(res)
+    val time = durationSeconds?.takeIf { it > 0 }?.let(::formatClock) ?: return base
+    return res.getString(R.string.step_title_with_time, base, time)
 }
 
 /** Short summary for list rows: "Microwave · 7 min". */
-fun CookingMethod?.summary(): String {
-    if (this == null) return "No instructions yet"
+fun CookingMethod?.summary(res: Resources): String {
+    if (this == null) return res.getString(R.string.no_instructions_yet)
     val total = totalSeconds
-    return if (total > 0) "${type.label()} · ${formatDuration(total)}" else type.label()
+    return if (total > 0) {
+        res.getString(R.string.method_summary, type.label(res), formatDuration(res, total))
+    } else {
+        type.label(res)
+    }
 }
 
-fun MethodType.label(): String = when (this) {
-    MethodType.MICROWAVE -> "Microwave"
-    MethodType.OVEN -> "Oven"
-    MethodType.AIR_FRYER -> "Air fryer"
-    MethodType.STOVETOP -> "Stovetop"
-}
+// Composable conveniences, read from the current configuration's resources.
+
+@Composable
+fun MethodType.label(): String = label(LocalResources.current)
+
+@Composable
+fun StepAction.label(): String = label(LocalResources.current)
+
+@Composable
+fun Step.title(): String = title(LocalResources.current)
+
+@Composable
+fun CookingMethod?.summary(): String = summary(LocalResources.current)
+
+@Composable
+fun formatDuration(seconds: Int): String = formatDuration(LocalResources.current, seconds)

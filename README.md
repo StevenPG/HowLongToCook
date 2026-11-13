@@ -172,7 +172,7 @@ HowLongToCook has no analytics, ads or accounts. Data leaves the device only to:
 - [ ] Continuous integration: tests and lint for both projects
 - [ ] Signed APK releases and a multi-arch container image on GHCR
 - [ ] F-Droid metadata
-- [ ] Localization (move UI strings into resources)
+- [ ] Translations (all UI text is already in string resources)
 - [ ] Optional cook timers
 - [ ] Photo of the instruction panel with on-device OCR
 

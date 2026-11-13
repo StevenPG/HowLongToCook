@@ -125,6 +125,7 @@ class ScreenshotTest {
         )
         val off = OpenFoodFactsClient(HttpClient(MockEngine { respond("{}", HttpStatusCode.NotFound) }))
         val vm = EditorViewModel(SavedStateHandle(mapOf("barcode" to "012345678905")), repo, settings, off)
+        // Called before loading finishes on purpose: the edits must survive the load.
         vm.setName("Chicken Pot Pie")
         vm.setBrand("Example Foods")
         shot("editor") {

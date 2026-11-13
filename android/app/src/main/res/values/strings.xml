@@ -1,3 +1,324 @@
-<resources>
-    <string name="app_name">HowLongToCook</string>
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name" translatable="false">HowLongToCook</string>
+
+    <!-- Common actions -->
+    <string name="action_back">Back</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_close">Close</string>
+    <string name="action_more">More</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_add_product">Add product</string>
+    <string name="action_add_a_product">Add a product</string>
+    <string name="action_add_manually">Add manually</string>
+    <string name="action_scan">Scan</string>
+    <string name="action_scan_barcode">Scan barcode</string>
+    <string name="action_clear_search">Clear search</string>
+    <string name="action_show">Show</string>
+    <string name="action_hide">Hide</string>
+    <string name="favorite_add">Add to favorites</string>
+    <string name="favorite_remove">Remove from favorites</string>
+    <string name="error_unknown">Unknown error</string>
+
+    <!-- Cooking methods -->
+    <string name="method_microwave">Microwave</string>
+    <string name="method_oven">Oven</string>
+    <string name="method_air_fryer">Air fryer</string>
+    <string name="method_stovetop">Stovetop</string>
+
+    <!-- Step actions -->
+    <string name="step_cook">Cook</string>
+    <string name="step_stir">Stir</string>
+    <string name="step_flip">Flip</string>
+    <string name="step_shake">Shake</string>
+    <string name="step_stand">Let stand</string>
+    <string name="step_vent">Vent</string>
+    <string name="step_remove">Remove</string>
+    <string name="step_other">Other</string>
+    <!-- e.g. "Cook 4:00" -->
+    <string name="step_title_with_time">%1$s %2$s</string>
+
+    <!-- Durations -->
+    <string name="duration_seconds" tools:ignore="PluralsCandidate">%1$d sec</string>
+    <string name="duration_minutes">%1$d min</string>
+    <string name="duration_minutes_seconds">%1$d:%2$02d</string>
+    <string name="duration_hours">%1$d hr</string>
+    <string name="duration_hours_minutes">%1$d hr %2$d min</string>
+    <!-- e.g. "Microwave · 7 min" -->
+    <string name="method_summary">%1$s · %2$s</string>
+    <string name="no_instructions_yet">No instructions yet</string>
+
+    <!-- Rating -->
+    <string name="rating_description">Rated %1$d of 5</string>
+    <string name="rating_none">Not rated</string>
+    <plurals name="rating_stars">
+        <item quantity="one">%d star</item>
+        <item quantity="other">%d stars</item>
+    </plurals>
+
+    <!-- Library -->
+    <string name="library_search_hint">Search name, brand, tag or barcode</string>
+    <string name="filter_all">All</string>
+    <string name="filter_favorites">Favorites</string>
+    <string name="library_recently_viewed">Recently viewed</string>
+    <string name="library_all_products">All products</string>
+    <string name="library_empty_title">Your freezer, organized</string>
+    <string name="library_empty_message">Scan a package barcode or add a product to save its cooking instructions before the box hits the recycling.</string>
+    <string name="library_no_matches_title">No matches</string>
+    <string name="library_no_matches_query">Nothing matches “%1$s”.</string>
+    <string name="library_no_matches_filter">No products in this filter yet.</string>
+    <string name="sync_synced">All changes synced</string>
+    <string name="sync_pending">Changes waiting to sync</string>
+    <string name="sync_syncing">Syncing…</string>
+    <string name="sync_failed">Sync failed: %1$s</string>
+    <string name="sync_local_only">Local only</string>
+
+    <!-- Detail -->
+    <string name="detail_not_found_title">Product not found</string>
+    <string name="detail_not_found_message">It may have been deleted on another device.</string>
+    <string name="action_back_to_library">Back to library</string>
+    <string name="detail_no_instructions_title">No cooking instructions yet</string>
+    <string name="detail_no_instructions_message">Add the microwave, oven, air fryer or stovetop steps from the box.</string>
+    <string name="action_add_instructions">Add instructions</string>
+    <string name="action_cook_mode">Cook mode</string>
+    <string name="delete_dialog_title">Delete “%1$s”?</string>
+    <string name="delete_dialog_message">It will be removed from this device and from your synced storage.</string>
+    <string name="method_total">%1$s total</string>
+    <string name="method_power">Power %1$s</string>
+    <string name="method_preheat">Preheat</string>
+
+    <!-- Cook mode -->
+    <string name="cook_mode_exit">Exit cook mode</string>
+    <string name="cook_step_done">Done</string>
+    <string name="cook_step_not_done">Not done</string>
+    <!-- e.g. "2. Cook 4:00" -->
+    <string name="numbered_step">%1$d. %2$s</string>
+
+    <!-- Editor -->
+    <string name="editor_title_new">New product</string>
+    <string name="editor_title_edit">Edit product</string>
+    <string name="editor_name">Name</string>
+    <string name="editor_name_placeholder">e.g. Chicken pot pie</string>
+    <string name="editor_required">Required</string>
+    <string name="editor_brand">Brand (optional)</string>
+    <string name="editor_looking_up">Looking up barcode…</string>
+    <string name="editor_lookup_filled">Filled in from Open Food Facts. Check it matches your package.</string>
+    <string name="editor_barcodes">Barcodes</string>
+    <string name="editor_add_barcode">Add barcode</string>
+    <string name="editor_remove_item">Remove %1$s</string>
+    <string name="editor_instructions">Cooking instructions</string>
+    <string name="editor_instructions_empty">Add at least one method from the box.</string>
+    <string name="editor_preferred">Preferred</string>
+    <string name="editor_method_options">Method options</string>
+    <string name="editor_make_preferred">Make preferred</string>
+    <string name="editor_move_up">Move up</string>
+    <string name="editor_move_down">Move down</string>
+    <string name="editor_remove_method">Remove method</string>
+    <string name="editor_temperature">Temperature</string>
+    <string name="editor_power_level">Power level</string>
+    <string name="editor_heat">Heat</string>
+    <string name="editor_power_placeholder" formatted="false">High, 50%…</string>
+    <string name="editor_heat_placeholder">Medium-high…</string>
+    <string name="editor_steps">Steps</string>
+    <string name="editor_add_step">Add step</string>
+    <string name="editor_method_notes">Method notes (optional)</string>
+    <string name="editor_step_options" tools:ignore="PluralsCandidate">Step %1$d options</string>
+    <string name="editor_remove_step">Remove step</string>
+    <string name="editor_step_describe">Describe the step</string>
+    <string name="editor_step_note">Note (optional)</string>
+    <string name="editor_minutes">min</string>
+    <string name="editor_seconds">sec</string>
+    <string name="editor_step_number">%1$d.</string>
+    <string name="editor_add_tags">Add tags</string>
+    <string name="editor_tags_placeholder">dinner, kids, spicy</string>
+    <string name="editor_add_tag">Add tag</string>
+    <string name="editor_rating">Rating</string>
+    <string name="editor_favorite">Favorite</string>
+    <string name="editor_notes">Notes</string>
+    <string name="editor_notes_placeholder">Anything worth remembering</string>
+    <string name="editor_discard_title">Discard changes?</string>
+    <string name="editor_discard_message">Your edits to this product haven\'t been saved.</string>
+    <string name="action_discard">Discard</string>
+    <string name="action_keep_editing">Keep editing</string>
+    <string name="editor_error_name">Give the product a name</string>
+    <string name="editor_error_temperature">Method %1$d: temperature must be a number</string>
+    <string name="editor_error_duration">Method %1$d, step %2$d: enter minutes and seconds (0–59)</string>
+    <string name="editor_barcode_invalid">Barcodes are 4–64 letters, digits or dashes</string>
+    <string name="editor_barcode_shared">%1$s is also saved on “%2$s”</string>
+
+    <!-- Validation (shared rules with the server) -->
+    <string name="validation_name_required">Name is required</string>
+    <plurals name="validation_name_too_long">
+        <item quantity="one">Name must be at most %d character</item>
+        <item quantity="other">Name must be at most %d characters</item>
+    </plurals>
+    <string name="validation_invalid_barcode">Invalid barcode “%1$s”</string>
+    <plurals name="validation_too_many_barcodes">
+        <item quantity="one">At most %d barcode</item>
+        <item quantity="other">At most %d barcodes</item>
+    </plurals>
+    <plurals name="validation_tag_too_long">
+        <item quantity="one">Tags must be at most %d character</item>
+        <item quantity="other">Tags must be at most %d characters</item>
+    </plurals>
+    <plurals name="validation_too_many_tags">
+        <item quantity="one">At most %d tag</item>
+        <item quantity="other">At most %d tags</item>
+    </plurals>
+    <string name="validation_rating">Rating must be between 1 and 5</string>
+    <plurals name="validation_too_many_methods">
+        <item quantity="one">At most %d method</item>
+        <item quantity="other">At most %d methods</item>
+    </plurals>
+    <plurals name="validation_too_many_steps">
+        <item quantity="one">At most %d step per method</item>
+        <item quantity="other">At most %d steps per method</item>
+    </plurals>
+    <string name="validation_temperature">Temperature out of range</string>
+    <string name="validation_duration">Step duration out of range</string>
+    <!-- e.g. "“Pot Pie”: Name is required" -->
+    <string name="validation_in_product">“%1$s”: %2$s</string>
+
+    <!-- Scanner -->
+    <string name="scanner_permission_title">Camera access needed</string>
+    <string name="scanner_permission_message">HowLongToCook uses the camera only to read barcodes. Nothing is recorded or uploaded.</string>
+    <string name="scanner_open_settings">Open app settings</string>
+    <string name="scanner_allow_camera">Allow camera</string>
+    <string name="scanner_enter_manually_long">Enter barcode manually</string>
+    <string name="scanner_prompt_add">Scan a barcode to add it</string>
+    <string name="scanner_prompt_lookup">Point the camera at a barcode</string>
+    <string name="scanner_hint">Hold steady with good light. Turn on the torch in a dark freezer.</string>
+    <string name="scanner_enter_manually">Enter manually</string>
+    <string name="scanner_multiple_title">Several products use %1$s</string>
+    <string name="scanner_add_new">Add new product</string>
+    <string name="scanner_scan_again">Scan again</string>
+    <string name="scanner_torch_on">Turn torch on</string>
+    <string name="scanner_torch_off">Turn torch off</string>
+    <string name="scanner_manual_title">Enter barcode</string>
+    <string name="scanner_manual_label">Barcode number</string>
+    <string name="scanner_look_up">Look up</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_storage_sync">Storage &amp; sync</string>
+    <string name="settings_storage">Storage</string>
+    <string name="settings_sync_now">Sync now</string>
+    <string name="settings_last_failed">Last attempt failed: %1$s</string>
+    <string name="settings_last_synced">Last synced %1$s</string>
+    <string name="settings_not_synced">Not synced yet</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="settings_dynamic_color">Dynamic color</string>
+    <string name="settings_dynamic_color_summary">Use colors from your wallpaper instead of the HowLongToCook palette</string>
+    <string name="settings_temperature_unit">Temperature unit</string>
+    <string name="unit_auto">Auto</string>
+    <string name="unit_fahrenheit" translatable="false">°F</string>
+    <string name="unit_celsius" translatable="false">°C</string>
+    <string name="settings_lookup">Product lookup</string>
+    <string name="settings_open_food_facts" translatable="false">Open Food Facts</string>
+    <string name="settings_open_food_facts_summary">Fill in the name and brand of newly scanned products. Only the barcode is sent.</string>
+    <string name="settings_backup">Backup</string>
+    <string name="settings_export">Export library</string>
+    <string name="settings_export_summary">Save every product to a JSON file</string>
+    <string name="settings_import">Import library</string>
+    <string name="settings_import_summary">Merge a JSON export; newer versions win</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version %1$s</string>
+    <string name="settings_license">License</string>
+    <string name="settings_license_summary">GNU General Public License v3.0 or later</string>
+    <string name="settings_source">Source code</string>
+    <string name="storage_summary_local">This device only</string>
+    <string name="storage_summary_server">Self-hosted · %1$s</string>
+    <string name="storage_summary_r2">Cloudflare R2 · %1$s</string>
+    <string name="storage_summary_custom">S3-compatible · %1$s</string>
+    <string name="storage_summary_aws">Amazon S3 · %1$s</string>
+    <plurals name="export_done">
+        <item quantity="one">Exported %d product</item>
+        <item quantity="other">Exported %d products</item>
+    </plurals>
+    <string name="export_failed">Export failed: %1$s</string>
+    <plurals name="import_done">
+        <item quantity="one">Imported %1$d product: %2$d added or updated, %3$d already up to date</item>
+        <item quantity="other">Imported %1$d products: %2$d added or updated, %3$d already up to date</item>
+    </plurals>
+    <string name="import_failed">Import failed: %1$s</string>
+    <string name="error_file_write">Could not open the file for writing</string>
+    <string name="error_file_read">Could not open the file</string>
+    <string name="error_not_an_export">Not a HowLongToCook export file</string>
+    <string name="error_newer_file">This file was created by a newer version of the app</string>
+
+    <!-- Storage settings -->
+    <string name="storage_intro">Products are always stored on this device first. Choose where they should also be synced.</string>
+    <string name="storage_option_local">This device only</string>
+    <string name="storage_option_local_summary">No sync. Use export/import for backups.</string>
+    <string name="storage_option_aws">Amazon S3</string>
+    <string name="storage_option_aws_summary">Your own S3 bucket and IAM access key.</string>
+    <string name="storage_option_r2">Cloudflare R2</string>
+    <string name="storage_option_r2_summary">An R2 bucket with an S3 API token.</string>
+    <string name="storage_option_custom">S3-compatible</string>
+    <string name="storage_option_custom_summary">MinIO, RustFS, Garage, Backblaze B2, Wasabi…</string>
+    <string name="storage_option_server">Self-hosted server</string>
+    <string name="storage_option_server_summary">The HowLongToCook Rust server.</string>
+    <string name="storage_test">Test connection</string>
+    <string name="storage_testing">Testing connection…</string>
+    <string name="storage_account_id">Cloudflare account ID</string>
+    <string name="storage_account_id_hint">From the R2 overview page</string>
+    <string name="storage_endpoint">Endpoint URL</string>
+    <string name="storage_endpoint_hint">e.g. https://s3.example.com:9000</string>
+    <string name="storage_region">Region</string>
+    <string name="storage_region_hint_custom">us-east-1 if unsure</string>
+    <string name="storage_region_hint_aws">e.g. us-east-1</string>
+    <string name="storage_bucket">Bucket</string>
+    <string name="storage_access_key">Access key ID</string>
+    <string name="storage_secret_key">Secret access key</string>
+    <string name="storage_prefix">Folder prefix</string>
+    <string name="storage_prefix_hint">The library is stored at %1$s</string>
+    <string name="storage_path_style">Path-style URLs</string>
+    <string name="storage_r2_help">Create an R2 API token with Object Read &amp; Write access to this bucket, then use its Access Key ID and Secret Access Key.</string>
+    <string name="storage_server_url">Server URL</string>
+    <string name="storage_server_url_hint">e.g. https://cook.example.com</string>
+    <string name="storage_http_warning">Not encrypted. Only use http:// on a network you trust.</string>
+    <string name="storage_token">Access token</string>
+    <string name="storage_secret_saved">Saved — leave blank to keep</string>
+    <string name="storage_secret_help">Encrypted with the Android Keystore; never included in backups</string>
+    <string name="connection_no_library">Connected. No library yet — it will be created on first sync.</string>
+    <plurals name="connection_library">
+        <item quantity="one">Connected. Library has %d product.</item>
+        <item quantity="other">Connected. Library has %d products.</item>
+    </plurals>
+    <plurals name="connection_server">
+        <item quantity="one">Connected to server v%1$s. %2$d product.</item>
+        <item quantity="other">Connected to server v%1$s. %2$d products.</item>
+    </plurals>
+    <string name="connection_local">Nothing to test in local-only mode</string>
+
+    <!-- Sync and connection errors -->
+    <string name="error_config_account_id">Enter your Cloudflare account ID</string>
+    <string name="error_config_endpoint">Enter the endpoint URL</string>
+    <string name="error_config_bucket">Enter a bucket name</string>
+    <string name="error_config_access_key">Enter the access key ID</string>
+    <string name="error_config_secret">Enter the secret access key</string>
+    <string name="error_config_invalid_endpoint">Endpoint must start with https:// or http://</string>
+    <string name="error_config_server_url">Server URL must start with https:// or http://</string>
+    <string name="error_config_token">Enter the server token</string>
+    <string name="error_access_denied">Access denied — check the access key, secret and bucket permissions</string>
+    <string name="error_bucket_not_found">Bucket not found</string>
+    <string name="error_storage_status">Storage error %1$d</string>
+    <string name="error_storage_status_code">Storage error %1$d: %2$s</string>
+    <string name="error_conflict">Another device kept changing the library at the same time. Try again.</string>
+    <string name="error_invalid_token">Invalid server token</string>
+    <string name="error_api_not_found">Server API not found — check the URL</string>
+    <string name="error_server_status">Server error %1$d: %2$s</string>
+    <string name="error_unknown_host">Can\'t reach %1$s — check the address and your connection</string>
+    <string name="error_the_server">the server</string>
+    <string name="error_connection_refused">Connection refused — is the server running?</string>
+    <string name="error_timeout">The connection timed out</string>
+    <string name="error_tls">Secure connection failed: %1$s</string>
+    <string name="error_newer_library">The library was written by a newer version of the app. Please update the app.</string>
 </resources>

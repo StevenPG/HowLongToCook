@@ -1,5 +1,6 @@
 package com.stevenpg.howlongtocook.data.remote.server
 
+import com.stevenpg.howlongtocook.data.remote.ConnectionInfo
 import com.stevenpg.howlongtocook.data.remote.LocalRecord
 import com.stevenpg.howlongtocook.testing.FakeServer
 import com.stevenpg.howlongtocook.testing.product
@@ -68,6 +69,6 @@ class ServerRemoteStoreTest {
     fun `test connection describes the server`() = runTest {
         val server = FakeServer(token)
         server.put(product("a", 1))
-        assertEquals("Connected to server v0.1.0. 1 product(s).", store(server).testConnection())
+        assertEquals(ConnectionInfo(productCount = 1, serverVersion = "0.1.0"), store(server).testConnection())
     }
 }

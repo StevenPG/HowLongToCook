@@ -1,7 +1,9 @@
 package com.stevenpg.howlongtocook.ui.settings
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.stevenpg.howlongtocook.R
 import com.stevenpg.howlongtocook.data.remote.RemoteStoreFactory
 import com.stevenpg.howlongtocook.data.repository.ProductRepository
 import com.stevenpg.howlongtocook.data.settings.S3Provider
@@ -12,8 +14,12 @@ import com.stevenpg.howlongtocook.data.settings.ServerSettings
 import com.stevenpg.howlongtocook.data.settings.SettingsRepository
 import com.stevenpg.howlongtocook.data.settings.StorageMode
 import com.stevenpg.howlongtocook.data.sync.SyncScheduler
+import com.stevenpg.howlongtocook.ui.text.UiText
+import com.stevenpg.howlongtocook.ui.text.toUiText
+import com.stevenpg.howlongtocook.ui.text.uiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,19 +27,19 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** The five destinations shown to the user (S3 modes are split by provider). */
-enum class StorageOption(val title: String, val subtitle: String) {
-    LOCAL("This device only", "No sync. Use export/import for backups."),
-    AWS("Amazon S3", "Your own S3 bucket and IAM access key."),
-    R2("Cloudflare R2", "An R2 bucket with an S3 API token."),
-    S3_COMPATIBLE("S3-compatible", "MinIO, Garage, Backblaze B2, Wasabi…"),
-    SERVER("Self-hosted server", "The HowLongToCook Rust server."),
+enum class StorageOption(@StringRes val title: Int, @StringRes val subtitle: Int) {
+    LOCAL(R.string.storage_option_local, R.string.storage_option_local_summary),
+    AWS(R.string.storage_option_aws, R.string.storage_option_aws_summary),
+    R2(R.string.storage_option_r2, R.string.storage_option_r2_summary),
+    S3_COMPATIBLE(R.string.storage_option_custom, R.string.storage_option_custom_summary),
+    SERVER(R.string.storage_option_server, R.string.storage_option_server_summary),
 }
 
 sealed interface TestState {
     data object Idle : TestState
     data object Running : TestState
-    data class Ok(val message: String) : TestState
-    data class Failed(val message: String) : TestState
+    data class Ok(val message: UiText) : TestState
+    data class Failed(val message: UiText) : TestState
 }
 
 data class StorageUiState(
@@ -108,9 +114,11 @@ class StorageSettingsViewModel @Inject constructor(
                     )
                     else -> factory.s3(s.s3, s.s3Secret.ifBlank { secrets.get(SecretKind.S3_SECRET_ACCESS_KEY) })
                 }
-                TestState.Ok(store?.testConnection() ?: "Nothing to test in local-only mode")
+                TestState.Ok(store?.testConnection()?.toUiText() ?: uiText(R.string.connection_local))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                TestState.Failed(e.message ?: e::class.simpleName ?: "Connection failed")
+                TestState.Failed(e.toUiText())
             }
             _state.update { it.copy(test = result) }
         }

@@ -69,9 +69,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.stevenpg.howlongtocook.R
 import com.stevenpg.howlongtocook.data.model.MethodType
 import com.stevenpg.howlongtocook.data.model.StepAction
 import com.stevenpg.howlongtocook.data.model.TemperatureUnit
@@ -79,6 +81,8 @@ import com.stevenpg.howlongtocook.ui.components.IconBadge
 import com.stevenpg.howlongtocook.ui.components.RatingBar
 import com.stevenpg.howlongtocook.ui.components.SectionHeader
 import com.stevenpg.howlongtocook.ui.components.icon
+import com.stevenpg.howlongtocook.ui.text.UiText
+import com.stevenpg.howlongtocook.ui.text.asString
 import com.stevenpg.howlongtocook.util.label
 
 @Composable
@@ -109,16 +113,16 @@ fun EditorScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (state.isNew) "New product" else "Edit product") },
+                title = { Text(if (state.isNew) stringResource(R.string.editor_title_new) else stringResource(R.string.editor_title_edit)) },
                 navigationIcon = {
-                    IconButton(onClick = requestClose) { Icon(Icons.Outlined.Close, contentDescription = "Close") }
+                    IconButton(onClick = requestClose) { Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.action_close)) }
                 },
                 actions = {
                     TextButton(
                         onClick = viewModel::save,
                         enabled = !state.saving && !state.loading,
                         modifier = Modifier.testTag("save_button"),
-                    ) { Text("Save") }
+                    ) { Text(stringResource(R.string.action_save)) }
                 },
             )
         },
@@ -133,11 +137,11 @@ fun EditorScreen(
             }
             item { DetailsSection(state, viewModel) }
             item { BarcodeSection(state, viewModel, onScanBarcode) }
-            item { SectionHeader("Cooking instructions", Modifier.padding(top = 12.dp)) }
+            item { SectionHeader(stringResource(R.string.editor_instructions), Modifier.padding(top = 12.dp)) }
             if (state.methods.isEmpty()) {
                 item {
                     Text(
-                        "Add at least one method from the box.",
+                        stringResource(R.string.editor_instructions_empty),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 16.dp),
                     )
@@ -160,16 +164,16 @@ fun EditorScreen(
     if (confirmDiscard) {
         AlertDialog(
             onDismissRequest = { confirmDiscard = false },
-            title = { Text("Discard changes?") },
-            text = { Text("Your edits to this product haven't been saved.") },
-            confirmButton = { TextButton(onClick = { confirmDiscard = false; onClose() }) { Text("Discard") } },
-            dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text("Keep editing") } },
+            title = { Text(stringResource(R.string.editor_discard_title)) },
+            text = { Text(stringResource(R.string.editor_discard_message)) },
+            confirmButton = { TextButton(onClick = { confirmDiscard = false; onClose() }) { Text(stringResource(R.string.action_discard)) } },
+            dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text(stringResource(R.string.action_keep_editing)) } },
         )
     }
 }
 
 @Composable
-private fun ErrorCard(errors: List<String>) {
+private fun ErrorCard(errors: List<UiText>) {
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -180,7 +184,7 @@ private fun ErrorCard(errors: List<String>) {
         Row(Modifier.padding(16.dp)) {
             Icon(Icons.Outlined.ErrorOutline, null)
             Spacer(Modifier.width(12.dp))
-            Column { errors.forEach { Text(it) } }
+            Column { errors.forEach { Text(it.asString()) } }
         }
     }
 }
@@ -191,10 +195,10 @@ private fun DetailsSection(state: EditorUiState, vm: EditorViewModel) {
         OutlinedTextField(
             value = state.name,
             onValueChange = vm::setName,
-            label = { Text("Name") },
-            placeholder = { Text("e.g. Chicken pot pie") },
+            label = { Text(stringResource(R.string.editor_name)) },
+            placeholder = { Text(stringResource(R.string.editor_name_placeholder)) },
             isError = state.nameError,
-            supportingText = if (state.nameError) ({ Text("Required") }) else null,
+            supportingText = if (state.nameError) ({ Text(stringResource(R.string.editor_required)) }) else null,
             singleLine = true,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
             modifier = Modifier.fillMaxWidth().testTag("name_field"),
@@ -203,7 +207,7 @@ private fun DetailsSection(state: EditorUiState, vm: EditorViewModel) {
         OutlinedTextField(
             value = state.brand,
             onValueChange = vm::setBrand,
-            label = { Text("Brand (optional)") },
+            label = { Text(stringResource(R.string.editor_brand)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
             modifier = Modifier.fillMaxWidth(),
@@ -212,14 +216,14 @@ private fun DetailsSection(state: EditorUiState, vm: EditorViewModel) {
             Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
                 Spacer(Modifier.width(8.dp))
-                Text("Looking up barcode…", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.editor_looking_up), style = MaterialTheme.typography.bodySmall)
             }
         }
-        state.lookupMessage?.let {
+        if (state.filledFromLookup) {
             Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.AutoAwesome, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.secondary)
                 Spacer(Modifier.width(8.dp))
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.editor_lookup_filled), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -228,7 +232,7 @@ private fun DetailsSection(state: EditorUiState, vm: EditorViewModel) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun BarcodeSection(state: EditorUiState, vm: EditorViewModel, onScan: () -> Unit) {
-    SectionHeader("Barcodes", Modifier.padding(top = 12.dp))
+    SectionHeader(stringResource(R.string.editor_barcodes), Modifier.padding(top = 12.dp))
     Column(Modifier.padding(horizontal = 16.dp)) {
         if (state.barcodes.isNotEmpty()) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -237,7 +241,7 @@ private fun BarcodeSection(state: EditorUiState, vm: EditorViewModel, onScan: ()
                         selected = false,
                         onClick = { vm.removeBarcode(code) },
                         label = { Text(code) },
-                        trailingIcon = { Icon(Icons.Outlined.Close, contentDescription = "Remove $code", Modifier.size(18.dp)) },
+                        trailingIcon = { Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.editor_remove_item, code), Modifier.size(18.dp)) },
                     )
                 }
             }
@@ -245,16 +249,16 @@ private fun BarcodeSection(state: EditorUiState, vm: EditorViewModel, onScan: ()
         OutlinedTextField(
             value = state.barcodeInput,
             onValueChange = vm::setBarcodeInput,
-            label = { Text("Add barcode") },
+            label = { Text(stringResource(R.string.editor_add_barcode)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { vm.addBarcode() }),
             trailingIcon = {
                 Row {
                     if (state.barcodeInput.isNotBlank()) {
-                        IconButton(onClick = { vm.addBarcode() }) { Icon(Icons.Outlined.Add, contentDescription = "Add barcode") }
+                        IconButton(onClick = { vm.addBarcode() }) { Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.editor_add_barcode)) }
                     }
-                    IconButton(onClick = onScan) { Icon(Icons.Outlined.QrCodeScanner, contentDescription = "Scan barcode") }
+                    IconButton(onClick = onScan) { Icon(Icons.Outlined.QrCodeScanner, contentDescription = stringResource(R.string.action_scan_barcode)) }
                 }
             },
             supportingText = state.barcodeWarning?.let { w ->
@@ -262,7 +266,7 @@ private fun BarcodeSection(state: EditorUiState, vm: EditorViewModel, onScan: ()
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Outlined.Warning, null, Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text(w)
+                        Text(w.asString())
                     }
                 }
             },
@@ -291,28 +295,28 @@ private fun MethodEditor(
                 Column(Modifier.weight(1f)) {
                     Text(method.type.label(), style = MaterialTheme.typography.titleMedium)
                     if (index == 0 && count > 1) {
-                        Text("Preferred", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                        Text(stringResource(R.string.editor_preferred), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     }
                 }
                 Box {
-                    IconButton(onClick = { menu = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = "Method options") }
+                    IconButton(onClick = { menu = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = stringResource(R.string.editor_method_options)) }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         if (index > 0) {
                             DropdownMenuItem(
-                                text = { Text("Make preferred") },
+                                text = { Text(stringResource(R.string.editor_make_preferred)) },
                                 leadingIcon = { Icon(Icons.Outlined.ArrowUpward, null) },
                                 onClick = { menu = false; repeat(index) { viewModel.moveMethod(method.key, up = true) } },
                             )
                         }
                         if (index < count - 1) {
                             DropdownMenuItem(
-                                text = { Text("Move down") },
+                                text = { Text(stringResource(R.string.editor_move_down)) },
                                 leadingIcon = { Icon(Icons.Outlined.ArrowDownward, null) },
                                 onClick = { menu = false; viewModel.moveMethod(method.key, up = false) },
                             )
                         }
                         DropdownMenuItem(
-                            text = { Text("Remove method") },
+                            text = { Text(stringResource(R.string.editor_remove_method)) },
                             leadingIcon = { Icon(Icons.Outlined.Delete, null) },
                             onClick = { menu = false; viewModel.removeMethod(method.key) },
                         )
@@ -325,7 +329,7 @@ private fun MethodEditor(
                     OutlinedTextField(
                         value = method.temperature,
                         onValueChange = { v -> viewModel.updateMethod(method.key) { it.copy(temperature = v.filter(Char::isDigit).take(4)) } },
-                        label = { Text("Temperature") },
+                        label = { Text(stringResource(R.string.editor_temperature)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
@@ -343,7 +347,7 @@ private fun MethodEditor(
                     }
                 }
                 ListItem(
-                    headlineContent = { Text("Preheat") },
+                    headlineContent = { Text(stringResource(R.string.method_preheat)) },
                     trailingContent = {
                         Switch(
                             checked = method.preheat,
@@ -356,14 +360,14 @@ private fun MethodEditor(
                 OutlinedTextField(
                     value = method.power,
                     onValueChange = { v -> viewModel.updateMethod(method.key) { it.copy(power = v.take(60)) } },
-                    label = { Text(if (method.type == MethodType.MICROWAVE) "Power level" else "Heat") },
-                    placeholder = { Text(if (method.type == MethodType.MICROWAVE) "High, 50%…" else "Medium-high…") },
+                    label = { Text(stringResource(if (method.type == MethodType.MICROWAVE) R.string.editor_power_level else R.string.editor_heat)) },
+                    placeholder = { Text(stringResource(if (method.type == MethodType.MICROWAVE) R.string.editor_power_placeholder else R.string.editor_heat_placeholder)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
             Spacer(Modifier.height(12.dp))
-            Text("Steps", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.editor_steps), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             method.steps.forEachIndexed { i, step ->
                 if (i > 0) HorizontalDivider(Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
                 StepEditor(
@@ -379,12 +383,12 @@ private fun MethodEditor(
             TextButton(onClick = { viewModel.addStep(method.key) }) {
                 Icon(Icons.Outlined.Add, null, Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Add step")
+                Text(stringResource(R.string.editor_add_step))
             }
             OutlinedTextField(
                 value = method.notes,
                 onValueChange = { v -> viewModel.updateMethod(method.key) { it.copy(notes = v) } },
-                label = { Text("Method notes (optional)") },
+                label = { Text(stringResource(R.string.editor_method_notes)) },
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -405,7 +409,7 @@ private fun StepEditor(
     var optionsMenu by remember { mutableStateOf(false) }
     Column(Modifier.padding(vertical = 4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("$number.", style = MaterialTheme.typography.titleMedium, modifier = Modifier.width(28.dp))
+            Text(stringResource(R.string.editor_step_number, number), style = MaterialTheme.typography.titleMedium, modifier = Modifier.width(28.dp))
             Box(Modifier.weight(1f)) {
                 OutlinedButton(onClick = { actionMenu = true }, contentPadding = PaddingValues(horizontal = 12.dp)) {
                     Icon(step.action.icon, null, Modifier.size(18.dp))
@@ -423,26 +427,26 @@ private fun StepEditor(
                     }
                 }
             }
-            DurationField(step.minutes, "min") { v -> onChange { it.copy(minutes = v) } }
+            DurationField(step.minutes, stringResource(R.string.editor_minutes), maxDigits = 4) { v -> onChange { it.copy(minutes = v) } }
             Spacer(Modifier.width(6.dp))
-            DurationField(step.seconds, "sec") { v -> onChange { it.copy(seconds = v) } }
+            DurationField(step.seconds, stringResource(R.string.editor_seconds), maxDigits = 2) { v -> onChange { it.copy(seconds = v) } }
             Box {
-                IconButton(onClick = { optionsMenu = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = "Step $number options") }
+                IconButton(onClick = { optionsMenu = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = stringResource(R.string.editor_step_options, number)) }
                 DropdownMenu(expanded = optionsMenu, onDismissRequest = { optionsMenu = false }) {
                     if (canMoveUp) {
-                        DropdownMenuItem(text = { Text("Move up") }, leadingIcon = { Icon(Icons.Outlined.ArrowUpward, null) }, onClick = { optionsMenu = false; onMove(true) })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.editor_move_up)) }, leadingIcon = { Icon(Icons.Outlined.ArrowUpward, null) }, onClick = { optionsMenu = false; onMove(true) })
                     }
                     if (canMoveDown) {
-                        DropdownMenuItem(text = { Text("Move down") }, leadingIcon = { Icon(Icons.Outlined.ArrowDownward, null) }, onClick = { optionsMenu = false; onMove(false) })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.editor_move_down)) }, leadingIcon = { Icon(Icons.Outlined.ArrowDownward, null) }, onClick = { optionsMenu = false; onMove(false) })
                     }
-                    DropdownMenuItem(text = { Text("Remove step") }, leadingIcon = { Icon(Icons.Outlined.Delete, null) }, onClick = { optionsMenu = false; onRemove() })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_remove_step)) }, leadingIcon = { Icon(Icons.Outlined.Delete, null) }, onClick = { optionsMenu = false; onRemove() })
                 }
             }
         }
         OutlinedTextField(
             value = step.note,
             onValueChange = { v -> onChange { it.copy(note = v.take(500)) } },
-            placeholder = { Text(if (step.action == StepAction.OTHER) "Describe the step" else "Note (optional)") },
+            placeholder = { Text(stringResource(if (step.action == StepAction.OTHER) R.string.editor_step_describe else R.string.editor_step_note)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(start = 28.dp, top = 4.dp),
         )
@@ -450,10 +454,10 @@ private fun StepEditor(
 }
 
 @Composable
-private fun DurationField(value: String, label: String, onChange: (String) -> Unit) {
+private fun DurationField(value: String, label: String, maxDigits: Int, onChange: (String) -> Unit) {
     OutlinedTextField(
         value = value,
-        onValueChange = { onChange(it.filter(Char::isDigit).take(if (label == "sec") 2 else 4)) },
+        onValueChange = { onChange(it.filter(Char::isDigit).take(maxDigits)) },
         label = { Text(label) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
@@ -481,7 +485,7 @@ private fun AddMethodRow(onAdd: (MethodType) -> Unit) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MoreSection(state: EditorUiState, vm: EditorViewModel) {
-    SectionHeader("More", Modifier.padding(top = 16.dp))
+    SectionHeader(stringResource(R.string.action_more), Modifier.padding(top = 16.dp))
     Column(Modifier.padding(horizontal = 16.dp)) {
         if (state.tags.isNotEmpty()) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -490,7 +494,7 @@ private fun MoreSection(state: EditorUiState, vm: EditorViewModel) {
                         selected = false,
                         onClick = { vm.removeTag(tag) },
                         label = { Text(tag) },
-                        trailingIcon = { Icon(Icons.Outlined.Close, contentDescription = "Remove $tag", Modifier.size(18.dp)) },
+                        trailingIcon = { Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.editor_remove_item, tag), Modifier.size(18.dp)) },
                     )
                 }
             }
@@ -498,31 +502,31 @@ private fun MoreSection(state: EditorUiState, vm: EditorViewModel) {
         OutlinedTextField(
             value = state.tagInput,
             onValueChange = vm::setTagInput,
-            label = { Text("Add tags") },
-            placeholder = { Text("dinner, kids, spicy") },
+            label = { Text(stringResource(R.string.editor_add_tags)) },
+            placeholder = { Text(stringResource(R.string.editor_tags_placeholder)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { vm.addTag() }),
             trailingIcon = {
                 if (state.tagInput.isNotBlank()) {
-                    IconButton(onClick = { vm.addTag() }) { Icon(Icons.Outlined.Add, contentDescription = "Add tag") }
+                    IconButton(onClick = { vm.addTag() }) { Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.editor_add_tag)) }
                 }
             },
             modifier = Modifier.fillMaxWidth(),
         )
         ListItem(
-            headlineContent = { Text("Rating") },
+            headlineContent = { Text(stringResource(R.string.editor_rating)) },
             trailingContent = { RatingBar(state.rating, onRate = vm::setRating, starSize = 28.dp) },
         )
         ListItem(
-            headlineContent = { Text("Favorite") },
+            headlineContent = { Text(stringResource(R.string.editor_favorite)) },
             trailingContent = { Switch(checked = state.favorite, onCheckedChange = vm::setFavorite) },
         )
         OutlinedTextField(
             value = state.notes,
             onValueChange = vm::setNotes,
-            label = { Text("Notes") },
-            placeholder = { Text("Anything worth remembering") },
+            label = { Text(stringResource(R.string.editor_notes)) },
+            placeholder = { Text(stringResource(R.string.editor_notes_placeholder)) },
             minLines = 3,
             modifier = Modifier.fillMaxWidth(),
         )

@@ -1,6 +1,8 @@
 package com.stevenpg.howlongtocook.data.remote.s3
 
 import com.stevenpg.howlongtocook.data.model.Library
+import com.stevenpg.howlongtocook.data.remote.ConnectionInfo
+import com.stevenpg.howlongtocook.data.remote.IncompatibleLibraryException
 import com.stevenpg.howlongtocook.data.remote.LocalRecord
 import com.stevenpg.howlongtocook.data.remote.RemoteStore
 import com.stevenpg.howlongtocook.data.remote.RemoteSyncResult
@@ -18,15 +20,10 @@ class S3RemoteStore(
     private val clock: () -> Long = System::currentTimeMillis,
 ) : RemoteStore {
 
-    override suspend fun testConnection(): String {
+    override suspend fun testConnection(): ConnectionInfo {
         client.checkAccess(prefix = key.substringBeforeLast('/', ""))
-        val existing = client.getObject(key)
-        return if (existing == null) {
-            "Connected. No library yet — it will be created on first sync."
-        } else {
-            val lib = AppJson.decodeFromString(Library.serializer(), existing.bytes.decodeToString())
-            "Connected. Library has ${lib.products.count { !it.deleted }} product(s)."
-        }
+        val existing = client.getObject(key) ?: return ConnectionInfo(productCount = null)
+        return ConnectionInfo(productCount = decode(existing.bytes).products.count { !it.deleted })
     }
 
     override suspend fun sync(local: List<LocalRecord>, cursor: String?): RemoteSyncResult {
@@ -37,7 +34,7 @@ class S3RemoteStore(
             val current = client.getObject(key)
             val remoteLib = current?.let { decode(it.bytes) }
             if (remoteLib != null && remoteLib.schemaVersion > Library.SCHEMA_VERSION) {
-                throw IllegalStateException("Remote library was written by a newer app version; please update the app")
+                throw IncompatibleLibraryException(remoteLib.schemaVersion)
             }
             val result = Merge.merge(localProducts, remoteLib?.products.orEmpty())
             if (result.remoteChanged) {

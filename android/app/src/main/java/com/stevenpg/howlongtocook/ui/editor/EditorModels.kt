@@ -1,11 +1,14 @@
 package com.stevenpg.howlongtocook.ui.editor
 
+import com.stevenpg.howlongtocook.R
 import com.stevenpg.howlongtocook.data.model.CookingMethod
 import com.stevenpg.howlongtocook.data.model.MethodType
 import com.stevenpg.howlongtocook.data.model.Step
 import com.stevenpg.howlongtocook.data.model.StepAction
 import com.stevenpg.howlongtocook.data.model.Temperature
 import com.stevenpg.howlongtocook.data.model.TemperatureUnit
+import com.stevenpg.howlongtocook.ui.text.UiText
+import com.stevenpg.howlongtocook.ui.text.uiText
 import java.util.concurrent.atomic.AtomicLong
 
 private val keys = AtomicLong(1)
@@ -63,13 +66,13 @@ fun CookingMethod.toDraft(defaultUnit: TemperatureUnit) = MethodDraft(
     notes = notes.orEmpty(),
 )
 
-/** Converts drafts to the domain model, collecting human-readable errors. */
-fun MethodDraft.toMethod(index: Int, errors: MutableList<String>): CookingMethod {
-    val label = "Method ${index + 1}"
+/** Converts drafts to the domain model, collecting localizable errors. */
+fun MethodDraft.toMethod(index: Int, errors: MutableList<UiText>): CookingMethod {
+    val number = index + 1
     val temp = if (usesTemperature && temperature.isNotBlank()) {
         val v = temperature.trim().toIntOrNull()
         if (v == null || v !in 0..1000) {
-            errors += "$label: temperature must be a number"
+            errors += uiText(R.string.editor_error_temperature, number)
             null
         } else {
             Temperature(v, unit)
@@ -80,7 +83,7 @@ fun MethodDraft.toMethod(index: Int, errors: MutableList<String>): CookingMethod
     val steps = steps.mapIndexedNotNull { i, s ->
         val d = s.durationSeconds()
         if (d == -1) {
-            errors += "$label, step ${i + 1}: enter minutes and seconds (0-59)"
+            errors += uiText(R.string.editor_error_duration, number, i + 1)
         }
         val blank = s.action == StepAction.COOK && d == null && s.note.isBlank()
         if (blank && steps.size > 1) {

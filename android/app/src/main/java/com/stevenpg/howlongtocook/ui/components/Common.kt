@@ -29,7 +29,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
+import com.stevenpg.howlongtocook.R
 import com.stevenpg.howlongtocook.data.model.TemperatureUnit
 
 /** Display unit for temperatures, resolved from settings + locale in MainActivity. */
@@ -70,8 +73,9 @@ fun RatingBar(
     starSize: Dp = 20.dp,
     onRate: ((Int?) -> Unit)? = null,
 ) {
+    val description = rating?.let { stringResource(R.string.rating_description, it) } ?: stringResource(R.string.rating_none)
     Row(
-        modifier = modifier.semantics { contentDescription = rating?.let { "Rated $it of 5" } ?: "Not rated" },
+        modifier = modifier.semantics { contentDescription = description },
         horizontalArrangement = Arrangement.spacedBy(if (onRate != null) 0.dp else 2.dp),
     ) {
         for (i in 1..5) {
@@ -80,7 +84,7 @@ fun RatingBar(
             val icon = if (filled) Icons.Rounded.Star else Icons.Rounded.StarOutline
             if (onRate != null) {
                 IconButton(onClick = { onRate(if (rating == i) null else i) }) {
-                    Icon(icon, contentDescription = "$i star${if (i > 1) "s" else ""}", tint = tint, modifier = Modifier.size(starSize))
+                    Icon(icon, contentDescription = pluralStringResource(R.plurals.rating_stars, i, i), tint = tint, modifier = Modifier.size(starSize))
                 }
             } else {
                 Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(starSize))
@@ -116,7 +120,7 @@ fun EmptyState(
     }
 }
 
-/** Small rounded label used for tags, "Preheat", etc. */
+/** Small rounded label used for tags, stringResource(R.string.method_preheat), etc. */
 @Composable
 fun Pill(
     text: String,

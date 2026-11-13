@@ -1,10 +1,13 @@
 package com.stevenpg.howlongtocook.data.sync
 
+import android.content.Context
 import com.stevenpg.howlongtocook.data.local.ProductDao
 import com.stevenpg.howlongtocook.data.local.ProductEntity
 import com.stevenpg.howlongtocook.data.remote.LocalRecord
 import com.stevenpg.howlongtocook.data.remote.RemoteStoreFactory
 import com.stevenpg.howlongtocook.data.settings.SettingsRepository
+import com.stevenpg.howlongtocook.ui.text.toUiText
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
@@ -17,9 +20,13 @@ sealed interface SyncOutcome {
     data class Failure(val message: String, val retryable: Boolean) : SyncOutcome
 }
 
-/** Runs one sync pass against whichever remote store is configured. */
+/**
+ * Runs one sync pass against whichever remote store is configured. Failure messages are
+ * stored localized (see ui/text/Messages.kt) so Settings can show them as-is.
+ */
 @Singleton
 class SyncEngine @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val dao: ProductDao,
     private val settings: SettingsRepository,
     private val factory: RemoteStoreFactory,
@@ -33,7 +40,7 @@ class SyncEngine @Inject constructor(
         val store = try {
             factory.create(config) ?: return SyncOutcome.NotConfigured
         } catch (e: Exception) {
-            val msg = e.message ?: "Storage is not configured"
+            val msg = e.toUiText().resolve(context.resources)
             settings.recordSyncFailure(now, msg)
             return SyncOutcome.Failure(msg, retryable = false)
         }
@@ -55,18 +62,10 @@ class SyncEngine @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            val msg = friendlyMessage(e)
+            val msg = e.toUiText().resolve(context.resources)
             settings.recordSyncFailure(clock(), msg)
             return SyncOutcome.Failure(msg, retryable = isRetryable(e))
         }
-    }
-
-    private fun friendlyMessage(e: Exception): String = when (e) {
-        is java.net.UnknownHostException -> "Can't reach ${e.message ?: "the server"} — check the address and your connection"
-        is java.net.ConnectException -> "Connection refused — is the server running?"
-        is java.net.SocketTimeoutException -> "The connection timed out"
-        is javax.net.ssl.SSLException -> "Secure connection failed: ${e.message}"
-        else -> e.message ?: e::class.simpleName ?: "Sync failed"
     }
 
     private fun isRetryable(e: Exception): Boolean = e is java.io.IOException

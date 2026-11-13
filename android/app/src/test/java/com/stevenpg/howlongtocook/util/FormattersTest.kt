@@ -6,12 +6,19 @@ import com.stevenpg.howlongtocook.data.model.Step
 import com.stevenpg.howlongtocook.data.model.StepAction
 import com.stevenpg.howlongtocook.data.model.Temperature
 import com.stevenpg.howlongtocook.data.model.TemperatureUnit
+import android.content.res.Resources
+import androidx.test.core.app.ApplicationProvider
 import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class FormattersTest {
+    private val res: Resources = ApplicationProvider.getApplicationContext<android.content.Context>().resources
+
     @Test
     fun temperatures() {
         assertEquals("400°F", Temperature(400, TemperatureUnit.F).displayIn(TemperatureUnit.F))
@@ -31,11 +38,11 @@ class FormattersTest {
 
     @Test
     fun durations() {
-        assertEquals("45 sec", formatDuration(45))
-        assertEquals("7 min", formatDuration(420))
-        assertEquals("1:30", formatDuration(90))
-        assertEquals("1 hr", formatDuration(3600))
-        assertEquals("1 hr 15 min", formatDuration(4500))
+        assertEquals("45 sec", formatDuration(res, 45))
+        assertEquals("7 min", formatDuration(res, 420))
+        assertEquals("1:30", formatDuration(res, 90))
+        assertEquals("1 hr", formatDuration(res, 3600))
+        assertEquals("1 hr 15 min", formatDuration(res, 4500))
         assertEquals("4:00", formatClock(240))
         assertEquals("1:05:00", formatClock(3900))
     }
@@ -53,10 +60,10 @@ class FormattersTest {
     @Test
     fun summaries() {
         val m = CookingMethod(MethodType.MICROWAVE, steps = listOf(Step(StepAction.COOK, 240), Step(StepAction.STIR), Step(StepAction.COOK, 180)))
-        assertEquals("Microwave · 7 min", m.summary())
-        assertEquals("No instructions yet", (null as CookingMethod?).summary())
-        assertEquals("Stir", Step(StepAction.STIR).title())
-        assertEquals("Cook 4:00", Step(StepAction.COOK, 240).title())
-        assertEquals("Remove film 1:00", Step(StepAction.OTHER, 60, "Remove film").title())
+        assertEquals("Microwave · 7 min", m.summary(res))
+        assertEquals("No instructions yet", (null as CookingMethod?).summary(res))
+        assertEquals("Stir", Step(StepAction.STIR).title(res))
+        assertEquals("Cook 4:00", Step(StepAction.COOK, 240).title(res))
+        assertEquals("Remove film 1:00", Step(StepAction.OTHER, 60, "Remove film").title(res))
     }
 }

@@ -23,7 +23,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.stevenpg.howlongtocook.R
 import com.stevenpg.howlongtocook.data.model.CookingMethod
 import com.stevenpg.howlongtocook.data.model.Step
 import com.stevenpg.howlongtocook.data.model.StepAction
@@ -52,7 +54,7 @@ fun MethodCard(method: CookingMethod, modifier: Modifier = Modifier) {
                     Text(method.type.label(), style = MaterialTheme.typography.titleLarge)
                     if (method.totalSeconds > 0) {
                         Text(
-                            "${formatDuration(method.totalSeconds)} total",
+                            stringResource(R.string.method_total, formatDuration(method.totalSeconds)),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -61,11 +63,11 @@ fun MethodCard(method: CookingMethod, modifier: Modifier = Modifier) {
             }
             val pills = buildList<@Composable () -> Unit> {
                 method.temperature?.let { t -> add { Pill(t.displayIn(unit), icon = Icons.Outlined.Thermostat) } }
-                method.power?.let { p -> add { Pill("Power $p", icon = Icons.Outlined.Bolt) } }
+                method.power?.let { p -> add { Pill(stringResource(R.string.method_power, p), icon = Icons.Outlined.Bolt) } }
                 if (method.preheat) {
                     add {
                         Pill(
-                            "Preheat",
+                            stringResource(R.string.method_preheat),
                             icon = Icons.Outlined.LocalFireDepartment,
                             container = MaterialTheme.colorScheme.tertiaryContainer,
                             content = MaterialTheme.colorScheme.onTertiaryContainer,

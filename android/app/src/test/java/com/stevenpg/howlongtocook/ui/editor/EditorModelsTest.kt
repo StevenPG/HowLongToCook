@@ -6,6 +6,8 @@ import com.stevenpg.howlongtocook.data.model.Step
 import com.stevenpg.howlongtocook.data.model.StepAction
 import com.stevenpg.howlongtocook.data.model.Temperature
 import com.stevenpg.howlongtocook.data.model.TemperatureUnit
+import com.stevenpg.howlongtocook.R
+import com.stevenpg.howlongtocook.ui.text.UiText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -20,7 +22,7 @@ class EditorModelsTest {
             steps = listOf(Step(StepAction.COOK, 1500, "Center rack"), Step(StepAction.STAND, 90)),
             notes = "Crispy",
         )
-        val errors = mutableListOf<String>()
+        val errors = mutableListOf<UiText>()
         assertEquals(method, method.toDraft(TemperatureUnit.C).toMethod(0, errors))
         assertTrue(errors.isEmpty())
     }
@@ -32,10 +34,15 @@ class EditorModelsTest {
             temperature = "hot",
             steps = listOf(StepDraft(minutes = "3", seconds = "75")),
         )
-        val errors = mutableListOf<String>()
+        val errors = mutableListOf<UiText>()
         draft.toMethod(1, errors)
-        assertEquals(2, errors.size)
-        assertTrue(errors.all { it.startsWith("Method 2") })
+        assertEquals(
+            listOf(
+                UiText.Res(R.string.editor_error_temperature, listOf(2)),
+                UiText.Res(R.string.editor_error_duration, listOf(2, 1)),
+            ),
+            errors,
+        )
     }
 
     @Test

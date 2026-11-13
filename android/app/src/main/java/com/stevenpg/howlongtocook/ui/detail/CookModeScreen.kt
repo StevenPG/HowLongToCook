@@ -37,9 +37,11 @@ import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.stevenpg.howlongtocook.R
 import com.stevenpg.howlongtocook.data.model.StepAction
 import com.stevenpg.howlongtocook.ui.components.LocalTemperatureUnit
 import com.stevenpg.howlongtocook.util.displayIn
@@ -71,15 +73,15 @@ fun CookModeScreen(
                             val subtitle = listOfNotNull(
                                 method.type.label(),
                                 method.temperature?.displayIn(unit),
-                                method.power?.let { "Power $it" },
-                                if (method.preheat) "Preheat" else null,
+                                method.power?.let { stringResource(R.string.method_power, it) },
+                                if (method.preheat) stringResource(R.string.method_preheat) else null,
                             ).joinToString(" · ")
                             Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onClose) { Icon(Icons.Outlined.Close, contentDescription = "Exit cook mode") }
+                    IconButton(onClick = onClose) { Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.cook_mode_exit)) }
                 },
             )
         },
@@ -104,14 +106,14 @@ fun CookModeScreen(
                     Row(Modifier.padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             if (isDone) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
-                            contentDescription = if (isDone) "Done" else "Not done",
+                            contentDescription = if (isDone) stringResource(R.string.cook_step_done) else stringResource(R.string.cook_step_not_done),
                             modifier = Modifier.size(36.dp),
                             tint = if (isDone) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onPrimaryContainer,
                         )
                         Spacer(Modifier.width(20.dp))
                         Column {
                             Text(
-                                "${i + 1}. ${step.title()}",
+                                stringResource(R.string.numbered_step, i + 1, step.title()),
                                 style = MaterialTheme.typography.displaySmall,
                                 textDecoration = if (isDone) TextDecoration.LineThrough else null,
                                 color = if (isDone) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimaryContainer,
