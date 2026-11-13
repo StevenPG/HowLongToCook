@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Dashboard</h1>
+    <p class="muted">Server v{{ version }} · up {{ uptime }}</p>
+  </div>
+  <a class="btn" href="/admin/products/new">+ New product</a>
+</div>
+<section class="stats">
+  <div class="stat"><div class="value">{{ products }}</div><div class="label">Products</div></div>
+  <div class="stat"><div class="value">{{ favorites }}</div><div class="label">Favorites</div></div>
+  <div class="stat"><div class="value">{{ barcodes }}</div><div class="label">Barcodes</div></div>
+  <div class="stat"><div class="value">{{ tombstones }}</div><div class="label">Deleted</div></div>
+  <div class="stat"><div class="value">{{ revision }}</div><div class="label">Revision</div></div>
+  <div class="stat"><div class="value">{{ db_size }}</div><div class="label">Database</div></div>
+</section>
+<section class="card">
+  <h2>Recently updated</h2>
+  {% if recent.is_empty() %}
+    <div class="empty">No products yet. Add one here or from the app.</div>
+  {% else %}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Name</th><th>Instructions</th><th>Updated</th></tr></thead>
+    <tbody>
+    {% for p in recent %}
+      <tr>
+        <td class="name"><a href="/admin/products/{{ p.id }}">{{ p.name }}</a>{% if p.favorite %} <span class="chip fav">★</span>{% endif %}
+          {% if !p.brand.is_empty() %}<div class="muted small">{{ p.brand }}</div>{% endif %}</td>
+        <td>{{ p.summary }}</td>
+        <td class="muted small">{{ p.updated }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

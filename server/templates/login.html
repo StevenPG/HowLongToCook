@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in · HowLongToCook</title>
+  <link rel="icon" href="/admin/static/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/admin/static/admin.css">
+</head>
+<body>
+<div class="login-wrap">
+  <div class="card login">
+    <img src="/admin/static/logo.svg" alt="">
+    <h1>HowLongToCook</h1>
+    <p class="muted">Server administration</p>
+    {% if let Some(e) = error %}<div class="alert err" role="alert">{{ e }}</div>{% endif %}
+    <form method="post" action="/admin/login">
+      <label for="token">Access token</label>
+      <input id="token" name="token" type="password" autocomplete="current-password" required autofocus>
+      <button class="btn" type="submit">Sign in</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>

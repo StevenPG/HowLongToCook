@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Products{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{% if show_deleted %}Deleted products{% else %}Products{% endif %}</h1>
+  <a class="btn" href="/admin/products/new">+ New product</a>
+</div>
+{% include "flash.html" %}
+<form class="search" method="get" action="/admin/products">
+  <input type="search" name="q" value="{{ q }}" placeholder="Search name, brand, tag or barcode" aria-label="Search">
+  {% if show_deleted %}<input type="hidden" name="deleted" value="1">{% endif %}
+  <button class="btn tonal" type="submit">Search</button>
+  {% if show_deleted %}
+    <a class="btn outline" href="/admin/products">Show active</a>
+  {% else %}
+    <a class="btn outline" href="/admin/products?deleted=1">Show deleted</a>
+  {% endif %}
+</form>
+<section class="card">
+  {% if rows.is_empty() %}
+    <div class="empty">{% if q.is_empty() %}Nothing here yet.{% else %}No products match “{{ q }}”.{% endif %}</div>
+  {% else %}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Name</th><th>Instructions</th><th>Barcodes</th><th>Tags</th><th>Updated</th><th></th></tr></thead>
+    <tbody>
+    {% for p in rows %}
+      <tr>
+        <td class="name"><a href="/admin/products/{{ p.id }}">{{ p.name }}</a>{% if p.favorite %} <span class="chip fav">★</span>{% endif %}
+          {% if !p.brand.is_empty() %}<div class="muted small">{{ p.brand }}</div>{% endif %}</td>
+        <td>{{ p.summary }}</td>
+        <td class="small">{{ p.barcodes }}</td>
+        <td>{% for t in p.tags %}<span class="chip">{{ t }}</span>{% endfor %}</td>
+        <td class="muted small">{{ p.updated }}</td>
+        <td>
+          {% if show_deleted %}
+          <form class="inline" method="post" action="/admin/products/{{ p.id }}/restore"><button class="btn tonal small">Restore</button></form>
+          {% else %}
+          <a class="btn outline small" href="/admin/products/{{ p.id }}">Edit</a>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="muted small">{{ rows.len() }} product(s)</p>
+  {% endif %}
+</section>
+{% endblock %}

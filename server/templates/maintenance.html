@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Maintenance{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Maintenance</h1></div>
+{% include "flash.html" %}
+<div class="grid-2">
+  <section class="card">
+    <h2>Backup</h2>
+    <p class="muted">Download every product (including deleted ones) as a JSON file. The format matches the app's export and the S3/R2 <code>library.json</code>.</p>
+    <div class="actions"><a class="btn" href="/admin/export">Download export</a></div>
+  </section>
+  <section class="card">
+    <h2>Import</h2>
+    <p class="muted">Merge an export file. For each product the most recently updated version wins, so importing never overwrites newer data.</p>
+    <form method="post" action="/admin/import" enctype="multipart/form-data">
+      <input type="file" name="file" accept="application/json,.json" required>
+      <div class="actions"><button class="btn tonal" type="submit">Import</button></div>
+    </form>
+  </section>
+  <section class="card">
+    <h2>Purge deleted products</h2>
+    <p class="muted">{{ tombstones }} deleted product(s) are kept so deletions reach all of your devices. Purge them once every device has synced. This cannot be undone.</p>
+    <form method="post" action="/admin/maintenance/purge" onsubmit="return confirm('Permanently remove {{ tombstones }} deleted product(s)?')">
+      <div class="actions"><button class="btn danger" type="submit" {% if tombstones == 0 %}disabled{% endif %}>Purge {{ tombstones }}</button></div>
+    </form>
+  </section>
+  <section class="card">
+    <h2>Library</h2>
+    <p class="muted">{{ products }} active product(s).</p>
+    <div class="actions"><a class="btn outline" href="/admin/products?deleted=1">Review deleted</a></div>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Admin{% endblock %} · HowLongToCook</title>
+  <link rel="icon" href="/admin/static/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/admin/static/admin.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/admin"><img src="/admin/static/logo.svg" alt="">HowLongToCook</a>
+    <nav class="nav">
+      <a href="/admin" {% if nav == "dashboard" %}class="active"{% endif %}>Dashboard</a>
+      <a href="/admin/products" {% if nav == "products" %}class="active"{% endif %}>Products</a>
+      <a href="/admin/maintenance" {% if nav == "maintenance" %}class="active"{% endif %}>Maintenance</a>
+    </nav>
+    <form class="inline" method="post" action="/admin/logout">
+      <button class="btn outline small" type="submit">Sign out</button>
+    </form>
+  </div>
+</header>
+<main>
+{% block content %}{% endblock %}
+</main>
+<footer>HowLongToCook server · GPL-3.0-or-later</footer>
+</body>
+</html>

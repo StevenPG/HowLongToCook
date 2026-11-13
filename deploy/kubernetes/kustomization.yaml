@@ -1,0 +1,22 @@
+# Kustomize base for the HowLongToCook server.
+#   kubectl apply -k deploy/kubernetes
+# See README.md for creating the token secret and enabling the ingress.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: howlongtocook
+labels:
+  - pairs:
+      app.kubernetes.io/name: howlongtocook
+      app.kubernetes.io/part-of: howlongtocook
+    includeSelectors: false
+resources:
+  - namespace.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+  # - ingress.yaml        # uncomment after setting your host name
+  # - secret.example.yaml # for quick trials only; prefer `kubectl create secret`
+images:
+  - name: howlongtocook-server
+    newName: ghcr.io/stevenpg/howlongtocook-server
+    newTag: "0.1.0"

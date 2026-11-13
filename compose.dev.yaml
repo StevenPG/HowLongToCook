@@ -1,0 +1,59 @@
+# Local development stack: the Rust server plus RustFS (an S3-compatible store) so
+# both remote storage modes can be exercised from an emulator or device.
+#
+#   just dev-up        (or: docker compose -f compose.dev.yaml up -d --build)
+#
+# From the Android emulator, the host is reachable at 10.0.2.2:
+#   Self-hosted server : http://10.0.2.2:8080   token: dev-token-change-me
+#   S3-compatible      : endpoint http://10.0.2.2:9000, region us-east-1,
+#                        bucket howlongtocook, access key hltc, secret hltc-dev-secret
+#   S3 console         : http://localhost:9001 (RustFS)
+#
+# Note: RustFS accepts but does not enforce If-Match on PUT, so the app's
+# optimistic-concurrency protection only applies on AWS S3 / Cloudflare R2.
+name: howlongtocook-dev
+
+services:
+  server:
+    build:
+      context: server
+    environment:
+      HLTC_TOKEN: dev-token-change-me
+      RUST_LOG: info,howlongtocook_server=debug
+    ports:
+      - "8080:8080"
+    volumes:
+      - server-data:/data
+
+  # RustFS: an Apache-2.0, MinIO-compatible S3 server (MinIO no longer ships images).
+  s3:
+    image: rustfs/rustfs:latest
+    environment:
+      RUSTFS_ACCESS_KEY: hltc
+      RUSTFS_SECRET_KEY: hltc-dev-secret
+      RUSTFS_CONSOLE_ENABLE: "true"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - s3-data:/data
+
+  # Creates the bucket once the S3 API answers (curl signs the request with SigV4).
+  s3-init:
+    image: curlimages/curl:latest
+    depends_on: [s3]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        for i in $$(seq 1 30); do
+          code=$$(curl -s -o /dev/null -w '%{http_code}' --aws-sigv4 'aws:amz:us-east-1:s3' \
+            --user hltc:hltc-dev-secret -X PUT http://s3:9000/howlongtocook)
+          case "$$code" in 200|409) echo "bucket ready ($$code)"; exit 0;; esac
+          sleep 1
+        done
+        echo "could not create bucket"; exit 1
+    restart: "no"
+
+volumes:
+  server-data:
+  s3-data:
