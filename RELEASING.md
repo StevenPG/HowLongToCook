@@ -10,7 +10,7 @@ publishes everything for that version:
 | Server image | `ghcr.io/stevenpg/howlongtocook-server:<version>`, `:<major>.<minor>` and `:latest` |
 | Android APK | `HowLongToCook-<version>.apk` and its `.sha256`, attached to the GitHub Release |
 | Release notes | Install instructions, the version's `CHANGELOG.md` section if there is one, and GitHub's generated notes |
-| Provenance | Build attestations for the image and the APK, plus an SBOM for the image |
+| Provenance | An SBOM for the image; build attestations for the image and the APK once the repository is public (GitHub stores them only for public repos on personal accounts) |
 
 The app and the server share one version number. The signing key lives only in
 repository secrets and on your machine; it is never needed anywhere else.
@@ -97,7 +97,17 @@ move the `latest` image tag.
   fix it on `main`, and tag again.
 - **A later job failed:** fix the cause and use **Re-run failed jobs**. Pushing the image
   again with the same tags is harmless.
-- **Never re-tag a version that was published.** Release a new patch version instead.
+- **Moving a tag that never produced a release** (for example after fixing the cause):
+
+  ```sh
+  git push --delete origin vX.Y.Z && git tag -d vX.Y.Z
+  git checkout main && git pull
+  git tag -a vX.Y.Z -m "HowLongToCook X.Y.Z" && git push origin vX.Y.Z
+  ```
+
+  If an image was already pushed for that version, the new run overwrites its tags.
+- **Never re-tag a version that was published** (a GitHub Release exists for it, or people
+  installed it). Release a new patch version instead.
 
 ## Verifying a release
 

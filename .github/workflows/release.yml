@@ -5,8 +5,9 @@
 #
 #   1. checks the tag matches server/Cargo.toml
 #   2. runs the server and Android test suites
-#   3. builds and pushes the server image to GHCR (with SBOM + provenance attestation)
-#   4. builds the signed release APK (with provenance attestation)
+#   3. builds and pushes the server image to GHCR (with an SBOM; plus a provenance
+#      attestation once the repository is public)
+#   4. builds the signed release APK (with a provenance attestation once public)
 #   5. creates the GitHub Release, or adds the files to the one created in the UI
 # One-time setup: run tools/setup_release_signing.sh (see RELEASING.md).
 name: Release
@@ -135,7 +136,9 @@ jobs:
           sbom: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+      # GitHub stores attestations only for public repositories on personal accounts.
+      - if: ${{ !github.event.repository.private }}
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ${{ needs.prepare.outputs.image }}
           subject-digest: ${{ steps.build.outputs.digest }}
@@ -195,7 +198,9 @@ jobs:
       - name: Remove keystore
         if: always()
         run: rm -f "$RUNNER_TEMP/release.jks"
-      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+      # GitHub stores attestations only for public repositories on personal accounts.
+      - if: ${{ !github.event.repository.private }}
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: HowLongToCook-${{ needs.prepare.outputs.version }}.apk
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -223,6 +228,7 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
           IMAGE: ${{ needs.prepare.outputs.image }}
           DIGEST: ${{ needs.image.outputs.digest }}
+          PRIVATE: ${{ github.event.repository.private }}
         run: |
           core="${VERSION%%-*}"
           {
@@ -253,8 +259,10 @@ jobs:
             echo
             echo '```sh'
             echo "sha256sum -c HowLongToCook-$VERSION.apk.sha256"
-            echo "gh attestation verify HowLongToCook-$VERSION.apk --repo $GITHUB_REPOSITORY"
-            echo "gh attestation verify oci://$IMAGE:$VERSION --repo $GITHUB_REPOSITORY"
+            if [[ "$PRIVATE" != "true" ]]; then
+              echo "gh attestation verify HowLongToCook-$VERSION.apk --repo $GITHUB_REPOSITORY"
+              echo "gh attestation verify oci://$IMAGE:$VERSION --repo $GITHUB_REPOSITORY"
+            fi
             echo '```'
           } > notes.md
           cat notes.md
