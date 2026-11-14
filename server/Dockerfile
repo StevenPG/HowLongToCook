@@ -12,7 +12,13 @@ COPY migrations migrations
 COPY templates templates
 COPY static static
 COPY src src
-RUN cargo build --release --locked \
+# The checked-out sources can have mtimes older than the placeholder build above, and
+# cargo's artifact layout changes between releases, so deleting artifacts by glob is not
+# enough to force a rebuild. Touch the crate roots so cargo always recompiles them, then
+# fail the build if the placeholder binary somehow survives.
+RUN touch src/main.rs src/lib.rs \
+    && cargo build --release --locked \
+    && ./target/release/howlongtocook-server --version | grep -q '^howlongtocook-server ' \
     && mkdir -p /out/data \
     && cp target/release/howlongtocook-server /out/
 
