@@ -1,59 +1,55 @@
 # Releasing
 
-Releases are built and published by GitHub Actions
-([`.github/workflows/release.yml`](.github/workflows/release.yml)) when a version tag
-is pushed. One tag publishes everything:
+Releases are made **by hand**: nothing is published until a maintainer pushes a version
+tag or creates a release in the GitHub UI. GitHub Actions
+([`.github/workflows/release.yml`](.github/workflows/release.yml)) then builds and
+publishes everything for that version:
 
 | Artifact | Where |
 |---|---|
 | Server image | `ghcr.io/stevenpg/howlongtocook-server:<version>`, `:<major>.<minor>` and `:latest` |
 | Android APK | `HowLongToCook-<version>.apk` and its `.sha256`, attached to the GitHub Release |
-| Release notes | Generated from the version's section in `CHANGELOG.md` |
+| Release notes | Install instructions, the version's `CHANGELOG.md` section if there is one, and GitHub's generated notes |
 | Provenance | Build attestations for the image and the APK, plus an SBOM for the image |
 
-The app and the server share one version number.
+The app and the server share one version number. The signing key lives only in
+repository secrets and on your machine; it is never needed anywhere else.
 
 ## One-time setup
 
-### 1. Create the Android signing key
+### 1. Create the signing key and secrets
 
 Android only installs an update if it is signed with the **same key** as the installed
-app. Create the key once and keep it safe. **If it is lost, existing users must
-uninstall and reinstall** (losing local data that hasn't been synced or exported).
+app. Create the key once, on your own machine, with:
 
 ```sh
-keytool -genkeypair -v \
-  -keystore howlongtocook-release.jks \
-  -alias howlongtocook \
-  -keyalg RSA -keysize 4096 -validity 10000 \
-  -dname "CN=HowLongToCook"
+tools/setup_release_signing.sh
 ```
 
-- Use the **same password** for the keystore and the key: the default PKCS12 format
-  doesn't support separate ones.
-- Never commit the `.jks` file (`.gitignore` already excludes `*.jks`).
-- Back it up and the password with it, for example in a password manager.
+It needs `keytool` (from any JDK), `openssl`, and the GitHub CLI logged in to this
+repository. The script:
 
-### 2. Add the repository secrets
+- generates a 4096-bit key with a random password
+- backs up the key and password in `~/.android/howlongtocook-release/` (readable only by you)
+- stores them as the `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
+  `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD` repository secrets
 
-In **Settings → Secrets and variables → Actions → New repository secret**, or with the GitHub CLI:
+The password goes straight from the script into GitHub. It is never printed, typed or
+passed on a command line. The script refuses to overwrite an existing key.
 
-```sh
-base64 -w0 howlongtocook-release.jks | gh secret set ANDROID_KEYSTORE_BASE64   # macOS: base64 -i howlongtocook-release.jks
-gh secret set ANDROID_KEYSTORE_PASSWORD
-gh secret set ANDROID_KEY_ALIAS --body howlongtocook
-gh secret set ANDROID_KEY_PASSWORD        # same value as the keystore password
-```
+**Copy the backup folder somewhere safe**, such as a password manager or an encrypted drive.
+If the key is lost, existing users must uninstall and reinstall (losing anything not
+synced or exported) to get later versions.
 
-The workflow fails before building the APK if these are missing, and it refuses to
-publish an APK signed with a debug key.
+The workflow refuses to build an APK if these secrets are missing, and refuses to
+publish one signed with a debug key.
 
-### 3. Check Actions is allowed to run
+### 2. Check Actions is allowed to run
 
 **Settings → Actions → General**: Actions must be enabled. Each job declares the
 permissions it needs, so the default read-only workflow permissions are fine.
 
-### 4. Decide who can download
+### 3. Decide who can download
 
 While the repository is **private**, the release, its APK and the GHCR image are only
 visible to people with access to the repository. To share them:
@@ -71,27 +67,33 @@ visible to people with access to the repository. To share them:
    is derived from it (`1.2.3` → `10203`).
 3. On a branch, update:
    - `server/Cargo.toml` `version` (and run `cargo check` so `Cargo.lock` follows)
-   - `CHANGELOG.md`: rename **Unreleased** to `## [X.Y.Z] - YYYY-MM-DD`, add a fresh empty
-     **Unreleased** section, and update the links at the bottom
+   - `CHANGELOG.md` (recommended): rename **Unreleased** to `## [X.Y.Z] - YYYY-MM-DD`, add a
+     fresh empty **Unreleased** section, and update the links at the bottom. The section
+     is copied into the release notes.
    - the image tag in `deploy/kubernetes/kustomization.yaml` and `deploy/docker/compose.yaml`
-4. Merge the pull request, then tag the merge commit on `main`:
+4. Merge the pull request, then publish in **one** of these ways:
 
-   ```sh
-   git checkout main && git pull
-   git tag -a vX.Y.Z -m "HowLongToCook X.Y.Z"
-   git push origin vX.Y.Z
-   ```
+   - **Push a tag** from `main` (or ask Claude Code to push it for you):
 
-5. Watch **Actions → Release**. The run tests both projects, then builds and publishes the
-   image and the APK, and finally creates the GitHub Release.
+     ```sh
+     git checkout main && git pull
+     git tag -a vX.Y.Z -m "HowLongToCook X.Y.Z"
+     git push origin vX.Y.Z
+     ```
+
+   - **Create the release in the GitHub UI:** **Releases → Draft a new release**, type the
+     new tag `vX.Y.Z` targeting `main`, write notes if you like, and publish. The workflow
+     adds the APK and checksum to that release and keeps your notes.
+
+5. Watch **Actions → Release**. The run tests both projects, publishes the image and the
+   APK, and creates or completes the GitHub Release.
 
 A tag with a suffix, such as `v0.2.0-rc.1`, is published as a **pre-release** and doesn't
 move the `latest` image tag.
 
 ### If a release fails
 
-- **The version check failed:** the tag doesn't match `server/Cargo.toml`, or the CHANGELOG
-  section is missing. Delete the tag (`git push --delete origin vX.Y.Z && git tag -d vX.Y.Z`),
+- **The version check failed:** the tag doesn't match `server/Cargo.toml`. Delete the tag (`git push --delete origin vX.Y.Z && git tag -d vX.Y.Z`),
   fix it on `main`, and tag again.
 - **A later job failed:** fix the cause and use **Re-run failed jobs**. Pushing the image
   again with the same tags is harmless.
