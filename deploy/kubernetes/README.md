@@ -9,10 +9,8 @@ kubectl apply -f deploy/kubernetes/namespace.yaml
 kubectl -n howlongtocook create secret generic howlongtocook-token \
   --from-literal=token="$(openssl rand -hex 32)"
 
-# 2. Point the image at your registry (until releases are published, build and push it yourself)
-docker build -t registry.example.com/howlongtocook-server:0.1.0 server/
-docker push registry.example.com/howlongtocook-server:0.1.0
-#    then edit `images:` in kustomization.yaml, or:
+# 2. The base uses the published image ghcr.io/stevenpg/howlongtocook-server:0.1.0.
+#    While the package is private, add an imagePullSecret for ghcr.io, or use your own registry:
 #    (cd deploy/kubernetes && kustomize edit set image howlongtocook-server=registry.example.com/howlongtocook-server:0.1.0)
 
 # 3. Deploy

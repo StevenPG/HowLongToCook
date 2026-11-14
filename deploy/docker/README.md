@@ -1,6 +1,14 @@
 # Docker
 
-## Build the image
+## Get the image
+
+Released images are published to GitHub Container Registry:
+
+```sh
+docker pull ghcr.io/stevenpg/howlongtocook-server:0.1.0   # or :latest
+```
+
+Or build it from source:
 
 ```sh
 docker build -t howlongtocook-server server/
@@ -17,7 +25,7 @@ docker run -d --name howlongtocook \
   -p 8080:8080 \
   -e HLTC_TOKEN="$(openssl rand -hex 32)" \
   -v howlongtocook-data:/data \
-  howlongtocook-server
+  ghcr.io/stevenpg/howlongtocook-server:0.1.0
 ```
 
 Then open <http://localhost:8080/admin> and sign in with the token. Use the same

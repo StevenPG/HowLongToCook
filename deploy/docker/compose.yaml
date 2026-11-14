@@ -2,7 +2,10 @@
 # token supplied via a Docker secret file.
 #
 #   mkdir -p secrets && openssl rand -hex 32 > secrets/hltc_token
-#   docker compose up -d --build
+#   docker compose up -d
+#
+# This uses the published image. To build from source instead, comment out `image`
+# and uncomment `build`, then run `docker compose up -d --build`.
 #
 # Put a TLS-terminating reverse proxy (Caddy, Traefik, nginx) in front of it for
 # access outside your LAN, and set HLTC_SECURE_COOKIES=true when you do.
@@ -10,9 +13,9 @@ name: howlongtocook
 
 services:
   server:
-    build:
-      context: ../../server
-    image: howlongtocook-server:latest
+    image: ghcr.io/stevenpg/howlongtocook-server:0.1.0
+    # build:
+    #   context: ../../server
     restart: unless-stopped
     ports:
       - "8080:8080"

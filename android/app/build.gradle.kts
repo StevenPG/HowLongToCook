@@ -8,6 +8,15 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
+// Release version: passed by CI from the git tag (-PappVersionName=0.1.0 -PappVersionCode=100),
+// defaulting to the values below for local builds.
+val appVersionName: String = providers.gradleProperty("appVersionName").getOrElse("0.1.0")
+val appVersionCode: Int = providers.gradleProperty("appVersionCode").map(String::toInt).getOrElse(1)
+
+// Release signing: CI provides the keystore through environment variables (see RELEASING.md).
+// Without them, local release builds fall back to the debug key so they stay installable.
+val releaseKeystore = providers.environmentVariable("HLTC_KEYSTORE_FILE")
+
 android {
     namespace = "com.stevenpg.howlongtocook"
     compileSdk = 37
@@ -16,9 +25,20 @@ android {
         applicationId = "com.stevenpg.howlongtocook"
         minSdk = 31
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
         testInstrumentationRunner = "com.stevenpg.howlongtocook.HiltTestRunner"
+    }
+
+    signingConfigs {
+        if (releaseKeystore.isPresent) {
+            create("release") {
+                storeFile = file(releaseKeystore.get())
+                storePassword = providers.environmentVariable("HLTC_KEYSTORE_PASSWORD").get()
+                keyAlias = providers.environmentVariable("HLTC_KEY_ALIAS").get()
+                keyPassword = providers.environmentVariable("HLTC_KEY_PASSWORD").get()
+            }
+        }
     }
 
     buildTypes {
@@ -33,9 +53,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            // Signed with the debug key until release signing is configured, so
-            // `assembleRelease` produces an installable APK for local testing.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (releaseKeystore.isPresent) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 
