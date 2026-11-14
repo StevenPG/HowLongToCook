@@ -17,7 +17,7 @@ and find them again in seconds, even offline in the garage.
 
 [Features](#features) ·
 [Screenshots](#screenshots) ·
-[Getting started](#getting-started) ·
+[Install](#install) ·
 [Self-hosting](#self-hosting-the-server) ·
 [Contributing](#contributing) ·
 [AI disclosure](#ai-disclosure)
@@ -101,7 +101,19 @@ the full design.
 | [`deploy/`](deploy) | Docker Compose and Kubernetes examples |
 | [`docs/`](docs) | Design document and images |
 
-## Getting started
+## Install
+
+Download the latest release from the [Releases page](../../releases/latest):
+
+- **Android app:** `HowLongToCook-<version>.apk`. Open it on your phone and allow installs
+  from your browser or file manager when asked. Requires Android 12 or newer.
+- **Server (optional):** `docker pull ghcr.io/stevenpg/howlongtocook-server:latest`. See
+  [Self-hosting](#self-hosting-the-server).
+
+Every release includes a SHA-256 checksum and build-provenance attestations; see
+[RELEASING.md](RELEASING.md#verifying-a-release) to verify them.
+
+## Building from source
 
 ### Requirements
 
@@ -169,8 +181,9 @@ HowLongToCook has no analytics, ads or accounts. Data leaves the device only to:
 
 ## Roadmap
 
-- [ ] Continuous integration: tests and lint for both projects
-- [ ] Signed APK releases and a multi-arch container image on GHCR
+- [x] Signed APK releases and a container image on GHCR
+- [ ] Continuous integration on pull requests
+- [ ] arm64 server image (Raspberry Pi)
 - [ ] F-Droid metadata
 - [ ] Translations (all UI text is already in string resources)
 - [ ] Optional cook timers

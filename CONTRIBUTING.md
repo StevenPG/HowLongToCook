@@ -87,6 +87,10 @@ Open the `android/` directory (not the repo root) in Android Studio.
 A maintainer will review your PR. Please be patient: this is a personal project
 maintained in spare time.
 
+## Releases
+
+Maintainers publish releases by pushing a version tag; see [RELEASING.md](RELEASING.md).
+
 ## AI-assisted contributions
 
 AI tools are allowed with disclosure and human review. See the policy in

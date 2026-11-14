@@ -8,6 +8,10 @@ The Android app and the server share one version number.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-14
+
+First release.
+
 ### Added
 - Android app (Kotlin, Jetpack Compose, Material 3):
   - library with search, favorite and tag filters, and recently viewed products
@@ -25,6 +29,8 @@ The Android app and the server share one version number.
   export and import, permanent removal of deleted products.
 - Docker image (distroless, non-root, healthcheck), Docker Compose and Kubernetes examples.
 - OpenAPI contract, design document, and test suites for both projects.
+- Release workflow: signed APK and server image on GHCR, published from a version tag,
+  with build-provenance attestations.
 - All user-facing text in Android string resources (with plurals), ready for translation;
   validation, sync and connection errors are typed and mapped to localized messages.
 
@@ -33,4 +39,5 @@ The Android app and the server share one version number.
 - Edits made in the product editor before it finished loading (such as a barcode returned
   by the scanner) are no longer lost.
 
-[Unreleased]: https://github.com/StevenPG/HowLongToCook/commits/main
+[Unreleased]: https://github.com/StevenPG/HowLongToCook/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/StevenPG/HowLongToCook/releases/tag/v0.1.0
